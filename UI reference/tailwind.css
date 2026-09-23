@@ -1,0 +1,113 @@
+/* Tailwind v4 theme — extracted from https://overflow.sui.io/ by Source Design. */
+/* Drop into your CSS entry. Every token below is mined; semantic roles alias the base value. */
+@import "tailwindcss";
+
+@theme {
+  /* colors — mined, ranked by usage */
+  --color-neutral-50: #ffffff;
+  --color-neutral-100: #eeeeee;
+  --color-neutral-200: #dddddd;
+  --color-neutral-300: #cccccc;
+  --color-neutral-400: #bbbec0;
+  --color-neutral-500: #aaadb0;
+  --color-neutral-600: #999999;
+  --color-neutral-700: #7c838a;
+  --color-neutral-800: #555555;
+  --color-neutral-900: #333333;
+  --color-neutral-950: #222222;
+  --color-cyan: #3898ec;
+  --color-cyan-2: #5d6c7b;
+  --color-cyan-3: #0082f3;
+  --color-cyan-4: #31404e;
+  --color-green: #55db9c;
+  --color-yellow: #ffff00;
+  --color-pale-red: #ffdede;
+  --color-red: #ea384c;
+  --color-deep-cyan: #000f1d;
+  --color-pale-indigo: #e9ccff;
+  --color-cyan-5: #4da2ff;
+  --color-pale-indigo-2: #dbcdeb;
+
+  /* semantic roles — aliased to the mined value above, so bg-accent === bg-neutral-50 */
+  --color-canvas: var(--color-neutral-50);
+  --color-ink: var(--color-neutral-950);
+  --color-text-muted: var(--color-neutral-700);
+  --color-surface: var(--color-neutral-100);
+  --color-hairline: var(--color-neutral-200);
+  --color-accent: var(--color-cyan);
+  --color-accent-2: var(--color-cyan-2);
+  --color-accent-3: var(--color-cyan-3);
+
+  /* type families */
+  --font-sans: "TWK Everett", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "TWK Everett Mono", ui-monospace, monospace;
+
+  /* spacing base drives the whole scale (site uses: 1, 2, 4, 5, 6, 8, 9, 10, 12, 15, 16, 20px) */
+  --spacing: 0.0625rem;
+
+  /* type scale — each size paired with a mined line-height (v4 --text-*--line-height) */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.25;
+  --text-sm: 0.8rem;
+  --text-sm--line-height: 1.25;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.25;
+  --text-lg: 1rem;
+  --text-lg--line-height: 1.25;
+  --text-xl: 1.125rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.25;
+  --text-4xl: 2rem;
+  --text-4xl--line-height: 0.85;
+  --text-5xl: 2.125rem;
+  --text-5xl--line-height: 0.85;
+  --text-6xl: 2.5rem;
+  --text-6xl--line-height: 0.85;
+  --text-7xl: 4rem;
+  --text-7xl--line-height: 0.85;
+  --text-8xl: 7.5rem;
+  --text-8xl--line-height: 0.85;
+
+  /* font weights in use */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* line-heights, tight -> loose */
+  --leading-none: 0.85;
+  --leading-tight: 1;
+  --leading-snug: 1.1;
+  --leading-normal: 1.2;
+  --leading-relaxed: 1.25;
+  --leading-loose: 1.3;
+  --leading-looser: 1.38;
+  --leading-loosest: 1.43;
+
+  /* letter-spacing, tight -> wide */
+  --tracking-tightest: -.08em;
+  --tracking-tighter: -.05em;
+  --tracking-tight: -.03em;
+  --tracking-normal: -.0225em;
+  --tracking-wide: -.02em;
+  --tracking-wider: .01em;
+
+  /* border radius */
+  --radius-sm: 3px;
+  --radius-md: 100%;
+  --radius-full: 50%;
+
+  /* shadows, sorted by blur */
+  --shadow-sm: unset;
+  --shadow-md: 0 0 3px #3336;
+  --shadow-lg: 0 0 3px 1px #3898ec;
+
+  /* breakpoints */
+  --breakpoint-sm: 29.9375rem;
+  --breakpoint-md: 47.9375rem;
+  --breakpoint-lg: 48rem;
+  --breakpoint-xl: 61.9375rem;
+}

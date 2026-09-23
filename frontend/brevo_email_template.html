@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zephyr Hackathon - Login OTP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      background-color: #0b1120;
+      /* Dark canvas */
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .email-wrapper {
+      width: 100%;
+      background-color: #0b1120;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+
+    .email-content {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-section {
+      width: 100%;
+      background-color: #ffffff;
+      /* White to match the JPG background */
+      text-align: center;
+    }
+
+    .robot-image {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .body-section {
+      padding: 40px;
+      text-align: center;
+    }
+
+    .heading {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 0 0 16px 0;
+      letter-spacing: -1px;
+      color: #ffffff !important;
+    }
+
+    .subtext {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin: 0 0 32px 0;
+    }
+
+    .otp-box {
+      background-color: #0b1120;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      display: inline-block;
+      min-width: 200px;
+    }
+
+    .otp-code {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: 8px;
+      color: #3898ec;
+      margin: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer {
+      padding: 24px 40px;
+      background-color: #0b1120;
+      border-top: 1px solid #1e293b;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="email-wrapper">
+    <div class="email-content">
+
+      <!-- HERO IMAGE / SPLINE ROBOT -->
+      <div class="hero-section">
+        <!-- Replace this src with the public URL of your image (e.g., from Supabase Storage or Imgur) -->
+        <img src="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/head.jpg" alt="Zephyr Robot"
+          class="robot-image" />
+      </div>
+
+      <div class="body-section">
+        <h1 class="heading">Sign up verification code</h1>
+        <p class="subtext">Use the authorization code below to log into the Zephyr Hackathon portal and access your
+          dashboard.</p>
+
+        <div class="otp-box">
+          <!-- Brevo variable for OTP -->
+          <p class="otp-code">{{ .Token }}</p>
+        </div>
+
+        <p class="subtext" style="font-size: 14px; margin: 0;">If you didn't request this, you can safely ignore this
+          email.</p>
+      </div>
+
+      <div class="footer">
+        <p class="footer-text">Zephyr Hackathon 2026 • Microsoft & PTU</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>

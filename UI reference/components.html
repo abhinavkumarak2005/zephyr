@@ -1,0 +1,69 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Components — https://overflow.sui.io/</title><style>
+  :root { --bg:#0b0b0e; --panel:#121216; --ln:#232329; --ink:#f2f2f4; --mut:#8a8a8e; --cyan:#22d3ee; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--mut); font-family: ui-sans-serif, system-ui, sans-serif; padding: 28px 24px 64px; }
+  .lede { color: var(--ink); font-size: 18px; margin-bottom: 4px; }
+  .sub { font-size: 13px; margin-bottom: 8px; }
+  .disc { font-size: 12px; color: var(--mut); max-width: 70ch; margin-bottom: 24px; }
+  .glabel { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mut); margin: 30px 0 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .tile { border: 1px solid var(--ln); border-radius: 12px; overflow: hidden; background: var(--panel); }
+  .stage { padding: 28px; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid var(--ln); }
+  .kind { font-family: ui-monospace, monospace; font-size: 11px; color: var(--mut); }
+  .copy { font-family: ui-monospace, monospace; font-size: 11px; color: var(--ink); background: transparent; border: 1px solid var(--ln); border-radius: 7px; padding: 3px 10px; cursor: pointer; }
+  .copy:hover { border-color: var(--cyan); color: var(--cyan); }
+</style></head><body>
+  <p class="lede">Components</p>
+  <p class="sub">6 UI components detected on https://overflow.sui.io/, rebuilt from the site's own mined CSS.</p>
+  <p class="disc">Each preview is a reconstruction: real component classes matched against the extracted stylesheet, custom properties resolved, rendered on the site's own canvas color. It is not a screenshot, and dynamic states (hover, focus) are not captured. Copy gives you a self-contained HTML snippet.</p>
+  <section><p class="glabel">Buttons · 3</p><div class="tiles"><figure class="tile">
+        <div class="stage" style="background:#ffffff;color:#000000;font-family:'TWK Everett', ui-sans-serif, system-ui, sans-serif"><button style="color: #f7f7f7; text-decoration: underline; background-color: #000f1d; width: 100%; padding: 2px; display: inline-flex; align-items: center; cursor: pointer">View Overflow 2025 Winners</button></div>
+        <figcaption class="bar">
+          <span class="kind">button</span>
+          <button class="copy" data-code="&lt;button style=&quot;color: #f7f7f7; text-decoration: underline; background-color: #000f1d; width: 100%; padding: 2px; display: inline-flex; align-items: center; cursor: pointer&quot;&gt;View Overflow 2025 Winners&lt;/button&gt;">Copy</button>
+        </figcaption>
+      </figure><figure class="tile">
+        <div class="stage" style="background:#ffffff;color:#000000;font-family:'TWK Everett', ui-sans-serif, system-ui, sans-serif"><button style="border: 2px solid #000f1d; display: flex; width: 100%; padding: 1.25em 5em 1.25em 1.25em; background-color: #0000; justify-content: flex-start; align-items: center; text-align: left; font-size: 1em; padding-left: 1em; cursor: pointer">What is Sui Overflow 2026?</button></div>
+        <figcaption class="bar">
+          <span class="kind">button</span>
+          <button class="copy" data-code="&lt;button style=&quot;border: 2px solid #000f1d; display: flex; width: 100%; padding: 1.25em 5em 1.25em 1.25em; background-color: #0000; justify-content: flex-start; align-items: center; text-align: left; font-size: 1em; padding-left: 1em; cursor: pointer&quot;&gt;What is Sui Overflow 2026?&lt;/button&gt;">Copy</button>
+        </figcaption>
+      </figure><figure class="tile">
+        <div class="stage" style="background:#ffffff;color:#000000;font-family:'TWK Everett', ui-sans-serif, system-ui, sans-serif"><button style="text-decoration: underline; background-color: #4da2ff; border: 2px solid #000f1d; justify-content: center; align-items: center; width: 100%; display: inline-flex; cursor: pointer">View Projects</button></div>
+        <figcaption class="bar">
+          <span class="kind">button</span>
+          <button class="copy" data-code="&lt;button style=&quot;text-decoration: underline; background-color: #4da2ff; border: 2px solid #000f1d; justify-content: center; align-items: center; width: 100%; display: inline-flex; cursor: pointer&quot;&gt;View Projects&lt;/button&gt;">Copy</button>
+        </figcaption>
+      </figure></div></section><section><p class="glabel">Inputs · 1</p><div class="tiles"><figure class="tile">
+        <div class="stage" style="background:#ffffff;color:#000000;font-family:'TWK Everett', ui-sans-serif, system-ui, sans-serif"><input style="color: #000f1d; line-height: .85; padding: .3125em .3125em .4em; background-color: #eee; border: 1px solid #ccc; width: 100%; font-size: 1.9em; display: block; letter-spacing: -.05em; font-weight: 500; padding-top: .5em; padding-bottom: .65em; padding-left: .5em" placeholder="Follow on X" /></div>
+        <figcaption class="bar">
+          <span class="kind">input</span>
+          <button class="copy" data-code="&lt;input placeholder=&quot;Follow on X&quot; style=&quot;color: #000f1d; line-height: .85; padding: .3125em .3125em .4em; background-color: #eee; border: 1px solid #ccc; width: 100%; font-size: 1.9em; display: block; letter-spacing: -.05em; font-weight: 500; padding-top: .5em; padding-bottom: .65em; padding-left: .5em&quot;&gt;">Copy</button>
+        </figcaption>
+      </figure></div></section><section><p class="glabel">Cards · 1</p><div class="tiles"><figure class="tile">
+        <div class="stage" style="background:#ffffff;color:#000000;font-family:'TWK Everett', ui-sans-serif, system-ui, sans-serif"><div style="border-color: #BBBEC0; width: 1.6875em; border-radius: 100%; font-size: 0; padding: .2em .5em; box-shadow: 0 0 3px #3336; background-color: #4da2ff; color: #0000; border: 1px solid #31404e; justify-content: center; align-items: center"><h4 style="margin:0 0 6px;font-size:16px;font-weight:600">Card title</h4><p style="margin:0;font-size:13px;opacity:.7">Rebuilt from the site's mined card styles.</p></div></div>
+        <figcaption class="bar">
+          <span class="kind">card</span>
+          <button class="copy" data-code="&lt;div style=&quot;border-color: #BBBEC0; width: 1.6875em; border-radius: 100%; font-size: 0; padding: .2em .5em; box-shadow: 0 0 3px #3336; background-color: #4da2ff; color: #0000; border: 1px solid #31404e; justify-content: center; align-items: center&quot;&gt;
+  &lt;h4&gt;Card title&lt;/h4&gt;
+  &lt;p&gt;Rebuilt from the site's mined card styles.&lt;/p&gt;
+&lt;/div&gt;">Copy</button>
+        </figcaption>
+      </figure></div></section><section><p class="glabel">Navigation · 1</p><div class="tiles"><figure class="tile">
+        <div class="stage" style="background:#ffffff;color:#000000;font-family:'TWK Everett', ui-sans-serif, system-ui, sans-serif"><nav style="display:flex;gap:20px;align-items:center;font-size:14px"><a href="#" style="text-decoration:none;color:#3898ec;opacity:1">Overview</a><a href="#" style="text-decoration:none;color:#000000;opacity:0.65">Why join us?</a><a href="#" style="text-decoration:none;color:#000000;opacity:0.65">Tracks</a><a href="#" style="text-decoration:none;color:#000000;opacity:0.65">Prizes</a><a href="#" style="text-decoration:none;color:#000000;opacity:0.65">Sponsors</a></nav></div>
+        <figcaption class="bar">
+          <span class="kind">nav</span>
+          <span class="kind">reconstructed</span>
+        </figcaption>
+      </figure></div></section>
+<script>
+document.addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest(".copy");
+  if (!b) return;
+  var code = b.getAttribute("data-code");
+  var done = function () { var o = b.textContent; b.textContent = "Copied"; setTimeout(function(){ b.textContent = o; }, 1200); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, done); else done();
+});
+</script></body></html>
