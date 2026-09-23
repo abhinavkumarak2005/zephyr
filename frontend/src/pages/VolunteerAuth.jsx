@@ -122,7 +122,7 @@ export default function VolunteerAuth() {
               transition={{ duration: 0.15 }}
               type="submit" 
               disabled={loading}
-              className="w-full group flex items-center justify-center gap-2 bg-slate-900 text-white font-semibold rounded-xl py-3.5 mt-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
+              className="w-full group flex items-center justify-center gap-2 bg-slate-900 text-white font-semibold rounded-xl py-3 mt-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
             >
               {loading ? 'Authenticating...' : 'Login'}
               {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}

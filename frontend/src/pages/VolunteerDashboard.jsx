@@ -123,10 +123,10 @@ export default function VolunteerDashboard() {
               <QrCode className="w-8 h-8 text-purple-600" />
             </div>
             <h2 className="text-xl font-bold mb-2">Scan Participant ID</h2>
-            <p className="text-slate-500 mb-8 text-sm">Focus your barcode scanner here, or manually type the Team ID below.</p>
+            <p className="text-slate-500 mb-8 text-sm">Scan the QR code, or manually type the Team ID below.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
               <Button type="button" variant={!scanMode ? 'default' : 'outline'} onClick={() => setScanMode(false)} className={`min-h-[44px] ${!scanMode ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-slate-600'}`}>
-                <QrCode className="w-4 h-4 mr-2" /> Manual / USB Scanner
+                Manual Entry
               </Button>
               <Button type="button" variant={scanMode ? 'default' : 'outline'} onClick={() => setScanMode(true)} className={`min-h-[44px] ${scanMode ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-slate-600'}`}>
                 <Camera className="w-4 h-4 mr-2" /> Use Phone Camera

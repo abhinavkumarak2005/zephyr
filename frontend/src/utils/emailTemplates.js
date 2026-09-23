@@ -1,0 +1,62 @@
+export const getUtrMismatchEmailTemplate = (contactName, teamName, dashboardUrl) => {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zephyr Hackathon - Action Required: UTR Mismatch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0; padding: 0; background-color: #0b1120;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #f8fafc; -webkit-font-smoothing: antialiased;
+    }
+    .email-wrapper { width: 100%; background-color: #0b1120; padding: 40px 20px; box-sizing: border-box; }
+    .email-content {
+      max-width: 600px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b;
+      border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .hero-section { width: 100%; background-color: #ffffff; text-align: center; }
+    .robot-image { width: 100%; height: auto; display: block; }
+    .body-section { padding: 40px; text-align: center; }
+    .heading { font-size: 28px; font-weight: 800; margin: 0 0 16px 0; letter-spacing: -1px; color: #ffffff !important; }
+    .subtext { font-size: 16px; color: #94a3b8; line-height: 1.6; margin: 0 0 32px 0; }
+    .btn {
+      display: inline-block; background-color: #3b82f6; color: #ffffff !important;
+      text-decoration: none; font-weight: 600; padding: 14px 28px; border-radius: 12px;
+      font-size: 16px; margin-bottom: 32px; transition: background-color 0.2s ease;
+    }
+    .btn:hover { background-color: #2563eb; }
+    .footer { padding: 24px 40px; background-color: #0b1120; border-top: 1px solid #1e293b; text-align: center; }
+    .footer-text { font-size: 12px; color: #64748b; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-content">
+      <div class="hero-section">
+        <img src="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/head.jpg" alt="Zephyr Robot" class="robot-image" />
+      </div>
+      <div class="body-section">
+        <h1 class="heading" style="color: #ef4444 !important;">Action Required</h1>
+        <p class="subtext">
+          Hi ${contactName},<br><br>
+          We couldn't verify the payment for team <strong>${teamName}</strong> using the UTR number you provided.
+        </p>
+        <p class="subtext">
+          Please log into your dashboard immediately to re-enter the correct UTR number or upload a valid transaction ID. Failure to do so may result in disqualification.
+        </p>
+        <a href="${dashboardUrl}" class="btn">Update UTR Now</a>
+        <p class="subtext" style="font-size: 14px; margin: 0;">
+          If you believe this is an error, please reply to this email to reach the organizing team.
+        </p>
+      </div>
+      <div class="footer">
+        <p class="footer-text">Zephyr Hackathon 2026 • Microsoft & PTU</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+};

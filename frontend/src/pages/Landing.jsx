@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import TeamShowcase from '../components/ui/TeamShowcase'
+import FacultyShowcase from '../components/ui/FacultyShowcase'
 import { MorphingCardStack } from '../components/ui/morphing-card-stack'
+import { AvailabilityCard } from '../components/ui/AvailabilityCard'
 import { AmountSlider, AmountReadout } from '../components/ui/amount-slider'
 import RulesSection from '../components/ui/RulesSection'
 import { Map, ShoppingCart, Leaf, ShieldAlert, Navigation, MonitorPlay, Dna, FlaskConical, Shield, Boxes } from 'lucide-react'
@@ -42,7 +44,7 @@ const NAV_ITEMS = [
 const TRACKS = [
   { name: 'Urban Mobility', keywords: 'Public transport, traffic, parking, ride-sharing, last-mile delivery, pedestrian safety, etc', color: '#4b6cf7', desc: 'Problem Statement: Enhancing Urban Commuting Efficiency and Non-Motorized Road User Safety\n\nRapid urbanization has intensified challenges in city transport systems, leading to severe bottlenecks in everyday mobility and rising safety concerns for non-motorized road users.\n\nCommuters in dense urban centers face major inefficiencies during daily travel, spending excess time and fuel navigating congested corridors and searching for available parking spaces. The lack of integrated, real-time mobility guidance prevents drivers from choosing optimal routes and parking solutions dynamically, worsening gridlock and increasing urban emissions.\n\nConcurrently, pedestrians and cyclists continue to experience high risks of conflict with vehicular traffic, particularly at unsignalled intersections, poorly illuminated stretches, and high-density crossing zones. Traditional static infrastructure often fails to provide timely warnings to drivers or vulnerable road users when safety hazards arise.' },
   { name: 'Smart Commerce', keywords: 'Retail, shopping, small businesses, payments, inventory, customer experience, local sellers, etc', color: '#e8b840', desc: 'Problem Statement: Empowering Small Retailers Through Digital Visibility and Automated Store Operations\n\nSmall and independent brick-and-mortar businesses face significant operational and competitive hurdles in an increasingly digitalized economy. While large enterprise retailers leverage automated systems and online ecosystems, local shop owners remain constrained by limited reach and manual, error-prone store management practices.\n\nNearby shoppers frequently lack real-time visibility into local product availability, leading them to rely on distant e-commerce platforms rather than supporting nearby merchants. This disconnect reduces foot traffic and revenue potential for neighbourhood stores. Simultaneously, inside the physical store, manual checkout processes slow down transaction times, lead to long wait times for customers, and expose retailers to inventory discrepancies and unrecorded shrinkage due to limited oversight.' },
-  { name: 'Climate & Natural Resources', keywords: 'Water, energy, waste, forests, pollution, extreme weather, conservation, resource management, etc.', color: '#e8631a', desc: 'Problem Statement: Optimizing Local Resource Management through Continuous Monitoring and Behavioral Insights\n\nResidential spaces, educational campuses, and small enterprises lack real-time visibility into their daily resource consumption—specifically across water, energy, and waste streams. Without actionable, centralized data, individuals and facility managers struggle to identify inefficiencies, track usage patterns, or adopt targeted conservation practices, leading to avoidable resource depletion and elevated operational costs.\n\nUnnoticed infrastructure failures, particularly hidden water leaks across supply pipelines and distributed plumbing networks, cause severe, cumulative resource loss before manual detection occurs. Traditional static monitoring methods fail to identify abnormal flow rates or notify stakeholders dynamically, allowing leaks to persist unchecked and compounding structural and environmental damage.' },
+  { name: 'Sustainable Resource Management', keywords: 'Water, energy, waste, forests, pollution, extreme weather, conservation, resource management, etc.', color: '#e8631a', desc: 'Problem Statement: Optimizing Local Resource Management for Environmental Sustainability through Continuous Monitoring and Behavioral Insights\n\nResidential spaces, educational campuses, and small enterprises often lack real-time visibility into their daily consumption of essential resources, particularly water, energy, and waste. Without centralized, actionable data, individuals and facility managers struggle to identify inefficiencies, understand consumption patterns, and implement targeted conservation measures.\n\nUnnoticed infrastructure failures, especially hidden water leaks across supply pipelines and distributed plumbing networks, can lead to significant and cumulative resource loss before they are detected manually. Traditional monitoring approaches often fail to identify abnormal consumption or flow patterns and provide timely alerts to stakeholders. As a result, leaks and other inefficiencies may continue unchecked, contributing to unnecessary resource wastage and environmental damage.\n\nThe proposed solution should leverage real-time monitoring, data analytics, and intelligent alerts to identify resource inefficiencies, encourage sustainable consumption practices, detect abnormal usage patterns, and support effective water, energy, and waste conservation.' },
   { name: 'Connected Communities', keywords: 'Neighborhoods, public services, local governance, emergency response, community engagement, accessibility, etc.', color: '#22c55e', desc: 'Problem Statement: Accelerating Emergency Response and Enhancing Safety Accessibility Across Communities\n\nDuring critical safety incidents and localized emergencies, residents in residential neighborhoods and public spaces face severe friction in initiating timely calls for help and obtaining actionable situational updates. Traditional reporting channels are often fragmented, causing delays in dispatching local authorities, coordinating nearby volunteers, and providing clear status updates to those affected.\n\nThe issue is further exacerbated for vulnerable demographics—such as children, senior citizens, and individuals with physical or cognitive disabilities—who may find navigating complex smartphone applications difficult or impossible during high-stress scenarios. When an emergency strikes, relying exclusively on app-based reporting excludes these groups from receiving rapid, accessible assistance.' },
   { name: 'Travel & Exploration', keywords: 'Tourism, navigation, hotels, cultural heritage, travel planning, local experiences, accessibility, safety, etc.', color: '#7c3aed', desc: 'Problem Statement: Enhancing Personalized Cultural Exploration and Belonging Security for Travelers\n\nTravelers visiting unfamiliar cities frequently struggle to curate cohesive, time-efficient itineraries that align with their specific personal interests. As a result, mainstream travel routes often overshadow lesser-known cultural, historical, and local heritage sites, leaving visitors with generic travel experiences and minimal contextual understanding of the destinations they explore.\n\nAt the same time, journey security remains a primary concern for both solo and group travelers. Mishandled luggage, misplaced personal belongings, and fear of property loss introduce significant stress and disruption to travel schedules. Relying on passive transit tracking or traditional manual checks leaves travelers vulnerable to property displacement without immediate awareness or dynamic location recovery options.' },
   { name: 'Entertainment & Creative World', keywords: 'Movies, music, gaming, content creation, sports entertainment, digital art, creators, events, etc.', color: '#3898ec', desc: 'Problem Statement: Streamlining Creator Workflows and Elevating In-Person Audience Engagement\n\nIndependent content creators across digital art, video, and audio domains are often overwhelmed by technical, administrative, and post-production tasks. Spending excessive effort on scripting, editing, and manual performance analysis diverts critical time and focus away from original artistic creation, limiting content output and potential growth.\n\nConcurrently, live entertainment venues—such as concerts, sports screenings, and university events—struggle to deliver dynamic, highly interactive experiences that fully engage modern audiences. Traditional event setups rely on static or centrally controlled environmental effects that fail to adapt responsively to real-time crowd energy, music variations, or physical participation, leaving live experiences feeling passive.' },
@@ -54,11 +56,11 @@ const TRACKS = [
 
 const WHY_ITEMS = [
   { theme: 'blue',  text: 'A prestigious Microsoft-backed hackathon designed to elevate your resume and build real-world credibility.' },
-  { theme: 'dark',  text: 'Direct networking with industry leaders, senior engineers, and top-tier talent.' },
-  { theme: 'dark',  text: 'Easily accessible right in your city with incredible offline perks and catered food.' },
-  { theme: 'white', text: 'Compete for massive cash prizes, exclusive goodies, and fast-track interviews with top tech companies.' },
+  { theme: 'dark',  text: 'Get mentorship from industry leaders, senior engineers, and top-tier talent.' },
+  { theme: 'dark',  text: 'Compete for a massive ₹75,000 cash prize and prove your skills on a real-world stage.' },
+  { theme: 'white', text: 'All Round 2 participants receive e-certificates, while finalists receive official physical certificates for their achievement and recognition.' },
   { theme: 'white', text: 'Gain hands-on experience solving impactful, real-world problem statements.' },
-  { theme: 'blue',  text: 'Access exclusive developer tools, APIs, and cloud credits from our partners to scale your project long after the hackathon ends.' }
+  { theme: 'blue',  text: "Access exclusive developer tools and cloud credits from our partners, tailored to your project's scope, supporting development beyond the hackathon." }
 ]
 
 const PRIZES = [
@@ -95,12 +97,12 @@ const PRIZES = [
 ]
 
 const FAQS = [
-  { q: 'Who can participate?',                              a: 'Any currently enrolled student. Teams of 2–4 members from any institution.' },
-  { q: 'What is the registration fee?',                    a: 'Communicated at registration. Payment via UPI — a valid UTR ID is required for confirmation.' },
-  { q: 'Can I change my problem statement after registering?', a: 'No. Your problem statement is locked upon payment confirmation.' },
-  { q: 'How will results be published?',                   a: 'Results will appear on your participant dashboard after admin review.' },
-  { q: 'What do I submit?',                                a: 'A Google Slides link (presentation) and a Google Drive link (project demo).' },
-  { q: 'Can I use any tech stack?',                        a: 'Yes. Any tech stack is allowed. Open-source libraries must be credited.' },
+  { q: 'Who can participate?', a: 'Any currently enrolled student. Teams of 2–4 members from any institution. Inter-college teams are allowed.' },
+  { q: 'How does the selection process work?', a: 'Round 1 is an idea screening round. Shortlisted teams will be notified and advance to the next rounds.' },
+  { q: 'What is the registration fee?', a: 'A registration fee of ₹500 is collected ONLY from teams shortlisted for the Online round. You must enter a valid and correct UTR ID to confirm your payment.' },
+  { q: 'Can I change my problem statement after registering?', a: 'No. Your problem statement is locked upon registration.' },
+  { q: 'How will results be published?', a: 'Results will appear on your dashboard after review, and announcements will be made via email and Instagram.' },
+  { q: 'Who do I contact for queries?', a: 'For any queries, please reach out to us through the official support email and phone numbers provided.' },
 ]
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -245,12 +247,17 @@ function TopHeader() {
   return (
     <header className="site-header">
       <div className="site-header__brand">
-        Zéphyr Hackathon 2026
+        <img src="/logos/header_logo.png" alt="Zephyr Hackathon 2026" style={{ height: '56px', objectFit: 'contain' }} />
       </div>
       <div className="site-header__date">
-        <span className="tag">&lt;date&gt;</span>
-        <span>Oct 21</span>
-        <span className="tag">&lt;/date&gt;</span>
+        <span style={{ 
+          color: '#ffffff', 
+          fontWeight: 'bold', 
+          fontSize: '18px',
+          letterSpacing: '-0.01em'
+        }}>
+          Grand Finale : <span style={{ color: '#60a5fa' }}>&lt;date&gt;</span>October 21-2026<span style={{ color: '#60a5fa' }}>&lt;/date&gt;</span>
+        </span>
       </div>
     </header>
   )
@@ -321,6 +328,15 @@ function BottomNav({ active }) {
    Hero Section
 ───────────────────────────────────────────────────────────────────────────── */
 function HeroSection({ visible }) {
+  const [isDesktop, setIsDesktop] = useState(true)
+
+  useEffect(() => {
+    const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 768)
+    checkIsDesktop()
+    window.addEventListener('resize', checkIsDesktop)
+    return () => window.removeEventListener('resize', checkIsDesktop)
+  }, [])
+
   return (
     <section id="overview" className="hero">
       <div className="hero__grid-bg" />
@@ -335,9 +351,9 @@ function HeroSection({ visible }) {
         {/* Logos row — Microsoft first, then PTU */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 48 }}>
           <img
-            src="/logos/Microsoft_Logo_512px.png"
+            src="/logos/MS_logo.png"
             alt="Microsoft"
-            style={{ height: 56, objectFit: 'contain' }}
+            style={{ height: 80, objectFit: 'contain' }}
           />
           <span style={{ color: 'var(--color-muted)', fontSize: 32, lineHeight: 1 }}>×</span>
           <img
@@ -356,19 +372,20 @@ function HeroSection({ visible }) {
           marginTop: 28, fontSize: 15, color: 'var(--color-muted)',
           letterSpacing: '-0.02em', lineHeight: 1.6, maxWidth: 400,
         }}>
-          A Microsoft × PTU collaborative hackathon. Students compete across AI,
-          Cloud, HealthTech, and Sustainability tracks for real prizes and recognition.
+          A Microsoft Community Event × PTU national-level hackathon. Build AI solutions across diverse domains for real prizes and recognition.
         </p>
 
         <p style={{
           marginTop: 16, fontSize: 15, color: 'var(--color-accent-blue)',
           letterSpacing: '-0.02em', lineHeight: 1.6, maxWidth: 400,
         }}>
-          Industry mentorship, fast-track interview opportunities, and exclusive
-          developer resources for top teams.
+          Gain industry mentorship, expert feedback, developer resources, and opportunities to turn ideas into real-world impact.
         </p>
 
-        <div style={{ marginTop: 48 }}>
+        <div style={{ marginTop: 64 }}>
+          <p style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-muted)', marginBottom: '12px' }}>
+            * Minimum 2 members and Maximum 4 required to Participate
+          </p>
           <Link to="/auth" className="btn-split">
             <span className="btn-split__main">Register Your Team</span>
             <span className="btn-split__arrow">
@@ -381,28 +398,107 @@ function HeroSection({ visible }) {
       </motion.div>
 
       {/* Right: Spline 3D */}
-      <motion.div
-        className="hero__illustration"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: visible ? 1 : 0 }}
-        transition={{ duration: 1, delay: 0.25 }}
-        style={{ willChange: 'opacity', contain: 'layout paint' }}
-      >
-        <Suspense fallback={
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              border: '2px solid #4b6cf7', borderTopColor: 'transparent',
-              animation: 'spin 0.8s linear infinite',
-            }} />
-          </div>
-        }>
-          <Spline
-            scene="https://prod.spline.design/QKjzhoN9XWLKyZQF/scene.splinecode"
-            style={{ width: '100%', height: '100%', minHeight: 500 }}
+      {isDesktop && (
+        <motion.div
+          className="hero__illustration hidden md:block"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: visible ? 1 : 0 }}
+          transition={{ duration: 1, delay: 0.25 }}
+          style={{ willChange: 'opacity', contain: 'layout paint' }}
+        >
+          <Suspense fallback={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                border: '2px solid #4b6cf7', borderTopColor: 'transparent',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+            </div>
+          }>
+            <Spline
+              scene="https://prod.spline.design/QKjzhoN9XWLKyZQF/scene.splinecode"
+              style={{ width: '100%', height: '100%', minHeight: 500 }}
+            />
+          </Suspense>
+        </motion.div>
+      )}
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Timeline Section
+───────────────────────────────────────────────────────────────────────────── */
+const TIMELINE = [
+  { id: 1, day: 24, month: "Sept" },
+  { id: 2, day: 4, month: "Oct" },
+  { id: 3, day: 6, month: "Oct" },
+  { id: 4, day: "??", month: "TBA" },
+  { id: 5, day: 13, month: "Oct" },
+  { id: 6, day: 21, month: "Oct" },
+]
+
+const TIMELINE_DETAILS = {
+  1: { title: 'Registration Starts', desc: 'Registrations open for all eligible participants.' },
+  2: { title: 'Registration Ends', desc: 'Deadline to submit your team applications (11 days).' },
+  3: { title: 'Shortlist Announcement', desc: 'Selected teams advance to the next round.' },
+  4: { title: 'Online Round', desc: 'To be Announced Soon.' },
+  5: { title: 'Finalists Announcement', desc: 'Top teams selected for the Grand Finale.' },
+  6: { title: 'Grand Finale', desc: 'Offline Grand Finale and prize distribution.' },
+}
+
+function TimelineSection() {
+  const [selectedSlot, setSelectedSlot] = useState(1);
+  const activeDetail = TIMELINE_DETAILS[selectedSlot];
+
+  return (
+    <section className="section border-y border-[#dbeafe]" style={{ background: 'linear-gradient(180deg, #f0f4ff 0%, #e0e7ff 100%)', padding: '80px 0', position: 'relative' }}>
+      {/* Dot Grid Background */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        backgroundImage: 'radial-gradient(circle, rgba(0, 0, 0, 0.15) 1.5px, transparent 1.5px)',
+        backgroundSize: '24px 24px',
+      }} />
+
+      <div style={{ textAlign: 'center', marginBottom: 48, position: 'relative', zIndex: 1 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.15em', color: 'var(--color-muted)', textTransform: 'uppercase' }}>TIMELINE</span>
+        <h2 className="display-heading display-md" style={{ color: 'var(--color-ink)', marginTop: 12 }}>
+          Phases of <span className="text-highlight">Hackathon</span>
+        </h2>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 flex flex-col md:flex-row gap-8 items-start relative z-10">
+        <div className="w-full md:w-1/2">
+          <AvailabilityCard
+            title={activeDetail.title}
+            slots={TIMELINE}
+            selectedSlotId={selectedSlot}
+            onSlotSelect={setSelectedSlot}
           />
-        </Suspense>
-      </motion.div>
+        </div>
+        
+        <div className="w-full md:w-1/2 flex flex-col justify-center min-h-[300px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedSlot}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100"
+            >
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">{activeDetail.title}</h3>
+              <p className="text-lg text-slate-500 leading-relaxed">{activeDetail.desc}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="mt-4 pt-4 md:mt-16 md:pt-16 relative z-10 flex flex-col items-center justify-center">
+        <CountdownTimer />
+      </div>
     </section>
   )
 }
@@ -511,10 +607,10 @@ function TracksSection() {
 /* ─────────────────────────────────────────────────────────────────────────────
    Prizes Section
 ───────────────────────────────────────────────────────────────────────────── */
-const PRIZE_STOPS = [15000, 20000, 25000]
+const PRIZE_STOPS = [20000, 25000, 30000]
 
 function PrizesSection() {
-  const [amount, setAmount] = useState(15000)
+  const [amount, setAmount] = useState(30000)
 
   // Label based on amount
   const getPrizeLabel = (val) => {
@@ -555,17 +651,17 @@ function PrizesSection() {
 
           <div className="flex flex-col gap-3 mt-4">
             <AmountSlider
-              min={15000}
-              max={25000}
+              min={20000}
+              max={30000}
               step={5000}
               stops={PRIZE_STOPS}
               value={[amount]}
-              onValueChange={([next]) => setAmount(next ?? 15000)}
+              onValueChange={([next]) => setAmount(next ?? 30000)}
             />
             <div className="flex justify-between text-xs font-bold text-[#0b1120]/70 tabular-nums">
-              <span>₹15k</span>
               <span>₹20k</span>
               <span>₹25k</span>
+              <span>₹30k</span>
             </div>
           </div>
 
@@ -657,7 +753,7 @@ function SponsorsSection() {
           <span className="sponsor-card__link">↗</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <img
-              src="/logos/Microsoft_Logo_512px.png"
+              src="/logos/MS_logo.png"
               alt="Microsoft"
               style={{ height: 48, objectFit: 'contain', objectPosition: 'left' }}
             />
@@ -710,22 +806,22 @@ function CountdownTimer() {
   }, []);
 
   return (
-    <div className="mt-8 md:mt-12 flex flex-col items-center">
-      <span className="text-xs md:text-sm font-bold text-[#0b1120]/60 uppercase tracking-widest mb-3">Registration closes Oct 4th</span>
-      <div className="flex items-center gap-2 md:gap-4 bg-white/40 backdrop-blur-md px-5 py-3 rounded-2xl border border-black/5 shadow-sm">
-        <div className="flex flex-col items-center min-w-[48px]">
-          <span className="text-2xl md:text-3xl font-black text-[#0b1120]">{timeLeft.days}</span>
-          <span className="text-[10px] md:text-xs uppercase font-bold text-gray-700 tracking-wider">Days</span>
+    <div className="flex flex-col items-center">
+      <span className="text-sm md:text-base font-bold text-[#0b1120]/70 uppercase tracking-widest mb-4">Registration closes Oct 4th</span>
+      <div className="flex items-center gap-3 md:gap-6 bg-white/60 backdrop-blur-md px-8 py-5 md:px-10 md:py-6 rounded-3xl border border-black/10 shadow-xl shadow-black/5">
+        <div className="flex flex-col items-center min-w-[72px] md:min-w-[80px]">
+          <span className="text-4xl md:text-6xl font-black text-[#0b1120] tracking-tighter leading-none">{timeLeft.days}</span>
+          <span className="text-xs md:text-sm uppercase font-bold text-gray-700 tracking-widest mt-2">Days</span>
         </div>
-        <span className="text-xl md:text-2xl font-bold text-gray-400 pb-3">:</span>
-        <div className="flex flex-col items-center min-w-[48px]">
-          <span className="text-2xl md:text-3xl font-black text-[#0b1120]">{String(timeLeft.hours).padStart(2, '0')}</span>
-          <span className="text-[10px] md:text-xs uppercase font-bold text-gray-700 tracking-wider">Hrs</span>
+        <span className="text-2xl md:text-4xl font-black text-gray-300 pb-5">:</span>
+        <div className="flex flex-col items-center min-w-[72px] md:min-w-[80px]">
+          <span className="text-4xl md:text-6xl font-black text-[#0b1120] tracking-tighter leading-none">{String(timeLeft.hours).padStart(2, '0')}</span>
+          <span className="text-xs md:text-sm uppercase font-bold text-gray-700 tracking-widest mt-2">Hrs</span>
         </div>
-        <span className="text-xl md:text-2xl font-bold text-gray-400 pb-3">:</span>
-        <div className="flex flex-col items-center min-w-[48px]">
-          <span className="text-2xl md:text-3xl font-black text-[#0b1120]">{String(timeLeft.mins).padStart(2, '0')}</span>
-          <span className="text-[10px] md:text-xs uppercase font-bold text-gray-700 tracking-wider">Mins</span>
+        <span className="text-2xl md:text-4xl font-black text-gray-300 pb-5">:</span>
+        <div className="flex flex-col items-center min-w-[72px] md:min-w-[80px]">
+          <span className="text-4xl md:text-6xl font-black text-[#0b1120] tracking-tighter leading-none">{String(timeLeft.mins).padStart(2, '0')}</span>
+          <span className="text-xs md:text-sm uppercase font-bold text-gray-700 tracking-widest mt-2">Mins</span>
         </div>
       </div>
     </div>
@@ -737,7 +833,6 @@ function CTASection() {
     <>
       <div className="cta-footer">
         <h2>Register your team<br />for Zéphyr Hackathon</h2>
-        <CountdownTimer />
       </div>
       <Link to="/auth" className="cta-footer__action">
         <span>Register Now</span>
@@ -746,6 +841,35 @@ function CTASection() {
         </svg>
       </Link>
     </>
+  )
+}
+
+function ContactSection() {
+  return (
+    <section id="contact" className="section section--light" style={{ padding: '60px 0', borderTop: '1px solid var(--color-hairline)' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 className="display-heading display-sm" style={{ color: 'var(--color-ink)', marginBottom: 24 }}>
+          Get in <span className="text-highlight">Touch</span>
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+          <p style={{ fontSize: '18px', color: 'var(--color-ink)' }}>
+            <strong>Email:</strong> <a href="mailto:zephyr@ptuniv.edu.in" className="text-blue-600 hover:underline">zephyr@ptuniv.edu.in</a>
+          </p>
+          <div style={{ fontSize: '18px', color: 'var(--color-ink)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <strong>Phone:</strong> 
+            <a href="tel:+919385910261" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              +91 93859 10261
+            </a>
+            <span className="text-slate-400">,</span>
+            <a href="tel:+918300949377" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              +91 83009 49377
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -803,10 +927,12 @@ export default function Landing() {
         transition: 'opacity 0.6s ease-out' 
       }}>
         <HeroSection visible={introComplete} />
+        <TimelineSection />
         <WhySection />
         <TracksSection />
         <PrizesSection />
         <RulesSection />
+        
         <section id="team" className="section section--light" style={{ padding: '100px 0', borderBottomColor: 'var(--color-hairline)', position: 'relative' }}>
           {/* Dot Grid Background */}
           <div style={{
@@ -818,15 +944,25 @@ export default function Landing() {
           }} />
 
           <div style={{ textAlign: 'center', marginBottom: 40, position: 'relative', zIndex: 1 }}>
+            <h2 className="display-heading display-md">Faculty <span className="text-highlight">Coordinators</span></h2>
+          </div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <FacultyShowcase />
+          </div>
+
+          <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 80, position: 'relative', zIndex: 1 }}>
             <h2 className="display-heading display-md">Meet the <span className="text-highlight">Team</span></h2>
-            <p style={{ color: 'var(--color-muted)', fontSize: 16, marginTop: 12 }}>
+            <p className="px-6 md:px-0 max-w-2xl mx-auto" style={{ color: 'var(--color-muted)', fontSize: 16, marginTop: 12 }}>
               The people working behind the scenes to make Zéphyr Hackathon a reality.
             </p>
           </div>
-          <TeamShowcase />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <TeamShowcase />
+          </div>
         </section>
         <FAQSection />
         <CTASection />
+        <ContactSection />
       </main>
       <BottomNav active={active} />
     </>

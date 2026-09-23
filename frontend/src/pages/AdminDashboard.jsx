@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Search, Box, Users, ShieldCheck, Trophy, CreditCard, Activity, FileText, UploadCloud, ChevronDown, ChevronUp, Copy, Check, XCircle, Send, Link as LinkIcon, LogOut, Mail, Phone, GraduationCap } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { getUtrMismatchEmailTemplate } from '../utils/emailTemplates';
 
 export default function AdminDashboard() {
   const [teams, setTeams] = useState([]);
@@ -12,6 +13,7 @@ export default function AdminDashboard() {
   const [problemStatements, setProblemStatements] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
   const [metrics, setMetrics] = useState({ profileCount: 0 });
+  const [globalSettings, setGlobalSettings] = useState({ broadcast_notice: '', registration_status: 'auto' });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('master');
   const [round2SubTab, setRound2SubTab] = useState('payment'); // 'payment', 'eval', 'publish'
@@ -74,13 +76,15 @@ export default function AdminDashboard() {
       .select('*')
       .order('created_at', { ascending: true });
 
-    const { data: psData } = await supabase.from('problem_statements').select('*');
+    const { data: psData } = await supabase.from('problem_statements').select('*').order('id', { ascending: true });
     const { count: profileCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+    const { data: settingsData } = await supabase.from('global_settings').select('*').eq('id', 1).single();
 
     if (!teamErr) setTeams(teamData || []);
     if (!evalErr) setEvaluations(evalData || []);
     if (volData) setVolunteers(volData);
     if (psData) setProblemStatements(psData);
+    if (settingsData) setGlobalSettings(settingsData);
     setMetrics({ profileCount: profileCount || 0 });
     
     setLoading(false);
@@ -114,10 +118,30 @@ export default function AdminDashboard() {
     fetchTeams();
   };
 
-  const handleRejectPayment = async (teamId) => {
-    if (window.confirm('Are you sure you want to mark this UTR as mismatched/rejected?')) {
-      await supabase.from('teams').update({ payment_status: 'rejected' }).eq('id', teamId);
+  const handleRejectPayment = async (team) => {
+    if (window.confirm(`Are you sure you want to mark UTR as mismatched and send an email to ${team.team_name}?`)) {
+      await supabase.from('teams').update({ payment_status: 'rejected' }).eq('id', team.id);
       fetchTeams();
+
+      const leader = team.team_members?.find(m => m.is_leader);
+      if (leader?.email) {
+        try {
+          const htmlContent = getUtrMismatchEmailTemplate(leader.full_name, team.team_name, 'https://zephyrptu.site/dashboard');
+          
+          await supabase.functions.invoke('send-email', {
+            body: {
+              to: leader.email,
+              subject: 'Action Required: Zephyr Hackathon UTR Mismatch',
+              htmlContent: htmlContent
+            }
+          });
+          
+          alert(`Rejection email successfully sent to ${leader.email}`);
+        } catch (error) {
+          console.error("Failed to send email", error);
+          alert('Status updated, but failed to send email. Check console.');
+        }
+      }
     }
   };
 
@@ -262,7 +286,14 @@ export default function AdminDashboard() {
     setIsNoticeModalOpen(false);
     setNoticeText('');
     setNoticeLoading(false);
+    fetchTeams();
     alert('Notice broadcasted globally to all teams!');
+  };
+
+  const handleUpdateRegistrationStatus = async (status) => {
+    await supabase.from('global_settings').update({ registration_status: status }).eq('id', 1);
+    fetchTeams();
+    alert(`Registration status updated to: ${status.toUpperCase()}`);
   };
 
   const handleCheckIn = async (e) => {
@@ -355,6 +386,10 @@ export default function AdminDashboard() {
 
           <button onClick={() => setActiveTab('volunteers')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'volunteers' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
             <div className="flex items-center gap-3"><ShieldCheck className="w-4 h-4" /><span className="font-medium text-sm">Volunteers</span></div>
+          </button>
+          
+          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
+            <div className="flex items-center gap-3"><Activity className="w-4 h-4" /><span className="font-medium text-sm">Settings</span></div>
           </button>
         </div>
 
@@ -650,7 +685,20 @@ export default function AdminDashboard() {
                                     <Button size="sm" onClick={() => handleVerifyPayment(team.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-sm text-xs px-4">
                                       <ShieldCheck className="w-4 h-4 mr-1.5" /> Verify
                                     </Button>
-                                    <Button size="sm" variant="outline" onClick={() => handleRejectPayment(team.id)} className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 rounded-full shadow-sm text-xs px-4">
+                                    <Button size="sm" variant="outline" onClick={() => handleRejectPayment(team)} className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 rounded-full shadow-sm text-xs px-4">
+                                      Mismatch
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => setRejectR1Team(team)} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-full shadow-sm text-xs px-4">
+                                      Disqualify
+                                    </Button>
+                                  </div>
+                                )}
+                                {team.payment_status === 'rejected' && (
+                                  <div className="flex gap-2 justify-end">
+                                    <Button size="sm" onClick={() => handleVerifyPayment(team.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-sm text-xs px-4">
+                                      Rectified
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => handleRejectPayment(team)} className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 rounded-full shadow-sm text-xs px-4" title="Resend Mismatch Email">
                                       Mismatch
                                     </Button>
                                     <Button size="sm" variant="outline" onClick={() => setRejectR1Team(team)} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-full shadow-sm text-xs px-4">
@@ -664,14 +712,6 @@ export default function AdminDashboard() {
                                 {team.payment_status === 'pending' && (
                                   <div className="flex items-center justify-end gap-3">
                                     <span className="text-slate-400 text-sm font-medium">Waiting on Team</span>
-                                    <Button size="sm" variant="outline" onClick={() => setRejectR1Team(team)} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-full shadow-sm text-xs px-4">
-                                      Disqualify
-                                    </Button>
-                                  </div>
-                                )}
-                                {team.payment_status === 'rejected' && (
-                                  <div className="flex items-center justify-end gap-3">
-                                    <span className="inline-flex items-center gap-1 text-red-600 text-sm font-bold"><XCircle className="w-4 h-4"/> Mismatched (Waiting Resubmit)</span>
                                     <Button size="sm" variant="outline" onClick={() => setRejectR1Team(team)} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-full shadow-sm text-xs px-4">
                                       Disqualify
                                     </Button>
@@ -1094,6 +1134,58 @@ export default function AdminDashboard() {
                         </table>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* SETTINGS TAB */}
+              {activeTab === 'settings' && (
+                <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Global Settings</h1>
+                    <p className="text-[#86868b]">Manage application-wide configurations and controls.</p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-2xl">
+                    <h3 className="font-bold text-[#1d1d1f] mb-2 text-lg">Registration Control</h3>
+                    <p className="text-slate-500 mb-6 text-sm">
+                      Control whether new users can register their teams. By default (Auto), registration will close automatically at EOD on Oct 4th, 2026.
+                    </p>
+
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => handleUpdateRegistrationStatus('auto')}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border ${globalSettings.registration_status === 'auto' ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-600' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                      >
+                        <div className="flex flex-col items-start text-left">
+                          <span className={`font-semibold ${globalSettings.registration_status === 'auto' ? 'text-blue-700' : 'text-slate-800'}`}>Auto (Default)</span>
+                          <span className="text-sm text-slate-500">Closes automatically on Oct 4th, 2026 EOD</span>
+                        </div>
+                        {globalSettings.registration_status === 'auto' && <CheckCircle2 className="text-blue-600 w-5 h-5" />}
+                      </button>
+
+                      <button 
+                        onClick={() => handleUpdateRegistrationStatus('open')}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border ${globalSettings.registration_status === 'open' ? 'bg-green-50 border-green-200 ring-1 ring-green-600' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                      >
+                        <div className="flex flex-col items-start text-left">
+                          <span className={`font-semibold ${globalSettings.registration_status === 'open' ? 'text-green-700' : 'text-slate-800'}`}>Force Open</span>
+                          <span className="text-sm text-slate-500">Allow registrations regardless of the current date</span>
+                        </div>
+                        {globalSettings.registration_status === 'open' && <CheckCircle2 className="text-green-600 w-5 h-5" />}
+                      </button>
+
+                      <button 
+                        onClick={() => handleUpdateRegistrationStatus('closed')}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border ${globalSettings.registration_status === 'closed' ? 'bg-red-50 border-red-200 ring-1 ring-red-600' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                      >
+                        <div className="flex flex-col items-start text-left">
+                          <span className={`font-semibold ${globalSettings.registration_status === 'closed' ? 'text-red-700' : 'text-slate-800'}`}>Force Closed</span>
+                          <span className="text-sm text-slate-500">Immediately stop accepting new registrations</span>
+                        </div>
+                        {globalSettings.registration_status === 'closed' && <CheckCircle2 className="text-red-600 w-5 h-5" />}
+                      </button>
                     </div>
                   </div>
                 </motion.div>

@@ -176,6 +176,8 @@ export function MorphingCardStack({
                   )}
                   style={{
                     backgroundColor: '#ffffff',
+                    willChange: isTopCard ? "transform" : "auto",
+                    touchAction: isTopCard ? "pan-y" : "auto"
                   }}
                 >
                   <div className="flex items-start gap-4 flex-col h-full">

@@ -20,7 +20,24 @@ export default function Auth() {
   const [name, setName] = useState('')
   const [college, setCollege] = useState('')
   const [resendTimer, setResendTimer] = useState(0)
+  const [globalSettings, setGlobalSettings] = useState(null)
   const navigate = useNavigate()
+
+  React.useEffect(() => {
+    supabase.from('global_settings').select('*').eq('id', 1).single().then(({ data }) => {
+      if (data) setGlobalSettings(data)
+    })
+  }, [])
+
+  const isRegistrationOpen = () => {
+    if (!globalSettings) return true; // Default to true while loading
+    if (globalSettings.registration_status === 'closed') return false;
+    if (globalSettings.registration_status === 'open') return true;
+    
+    // Auto mode
+    const deadline = new Date("October 4, 2026 23:59:59").getTime();
+    return new Date().getTime() <= deadline;
+  };
 
   React.useEffect(() => {
     let interval = null
@@ -43,6 +60,12 @@ export default function Auth() {
 
   const handleSendOtp = async (event) => {
     if (event) event.preventDefault()
+    
+    if (mode === 'signup' && !isRegistrationOpen()) {
+      setErrorMsg('We are no longer accepting new registrations.')
+      return;
+    }
+
     setLoading(true)
     setMessage('')
     setErrorMsg('')
@@ -163,7 +186,7 @@ export default function Auth() {
                           value={name}
                           required={mode === 'signup'}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-white/95 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
+                          className="w-full bg-white/95 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
                         />
                       </div>
                       <div className="relative">
@@ -176,7 +199,7 @@ export default function Auth() {
                           value={college}
                           required={mode === 'signup'}
                           onChange={(e) => setCollege(e.target.value)}
-                          className="w-full bg-white/95 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
+                          className="w-full bg-white/95 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
                         />
                       </div>
                     </motion.div>
@@ -193,7 +216,7 @@ export default function Auth() {
                     value={email}
                     required
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white/95 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
+                    className="w-full bg-white/95 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
                   />
                 </div>
 
@@ -202,7 +225,7 @@ export default function Auth() {
                   transition={{ duration: 0.15 }}
                   type="submit" 
                   disabled={loading}
-                  className="w-full group flex items-center justify-center gap-2 bg-slate-900 text-white font-semibold rounded-xl py-3.5 mt-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
+                  className="w-full group flex items-center justify-center gap-2 bg-slate-900 text-white font-semibold rounded-xl py-3 mt-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
                 >
                   {loading ? 'Sending Code...' : 'Continue'}
                   {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
@@ -212,7 +235,15 @@ export default function Auth() {
                   <button 
                     type="button" 
                     onClick={() => {
-                      setMode(mode === 'login' ? 'signup' : 'login')
+                      if (mode === 'login') {
+                        if (!isRegistrationOpen()) {
+                          setErrorMsg('We are no longer accepting new registrations.')
+                          return;
+                        }
+                        setMode('signup')
+                      } else {
+                        setMode('login')
+                      }
                       setErrorMsg('')
                       setMessage('')
                     }} 

@@ -88,7 +88,7 @@ export default function AdminAuth() {
                 value={username}
                 required
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white/95 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-purple-500/50 transition-all duration-300 shadow-sm"
+                className="w-full bg-white/95 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-purple-500/50 transition-all duration-300 shadow-sm"
               />
             </div>
 
@@ -118,7 +118,7 @@ export default function AdminAuth() {
               transition={{ duration: 0.15 }}
               type="submit" 
               disabled={loading}
-              className="w-full group flex items-center justify-center gap-2 bg-slate-900 text-white font-semibold rounded-xl py-3.5 mt-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
+              className="w-full group flex items-center justify-center gap-2 bg-slate-900 text-white font-semibold rounded-xl py-3 mt-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
             >
               {loading ? 'Authenticating...' : 'Login'}
               {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}

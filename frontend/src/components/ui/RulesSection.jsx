@@ -7,57 +7,82 @@ const beforeCode = `class HackathonRules:
     def add_rule(self, description: str):
         self.rules.append(description)
 
-def get_mih_rules():
-    mih = HackathonRules()
+def get_zephyr_rules():
+    z = HackathonRules()
     
-    # 1. General Conduct
-    mih.add_rule("Participants must adhere to the schedule, guidelines, and instructions communicated by the organizing committee.")
-    mih.add_rule("Professional and respectful conduct towards other participants, mentors, judges, organizers, and guests is required. Any misconduct leads to disqualification.")
-    mih.add_rule("Do not interfere with, copy, damage, or intentionally disrupt the work of other participants.")
+    # 1. Registration & Teams
+    z.add_rule("Registration fee of ₹500 will be collected only from teams who are shortlisted for Online round.")
+    z.add_rule("Each participant may be part of only one team. Changes require approval.")
+    z.add_rule("Inter college teams are allowed.")
     
-    # 2. Team & Project Guidelines
-    mih.add_rule("Each participant may be part of only one team. Changes require approval.")
-    mih.add_rule("Teams must select and develop a solution within one of the specified hackathon problem domains.")
-    mih.add_rule("All submitted ideas and projects must be original. Plagiarism leads to disqualification.")
-    mih.add_rule("Open-source libraries, APIs, datasets, and AI tools are allowed if licenses are properly acknowledged.")
+    # 2. General Conduct
+    z.add_rule("Participants must adhere to the schedule, guidelines, and instructions communicated by the organizing committee.")
+    z.add_rule("Professional and respectful conduct is required. Any misconduct leads to disqualification.")
+    z.add_rule("Do not interfere with, copy, damage, or intentionally disrupt the work of other participants.")
     
-    # 3. Evaluation & Submission
-    mih.add_rule("Shortlisted teams must participate in all mandatory stages (idea screening, progress reviews, Grand Finale).")
-    mih.add_rule("Teams must submit project materials (presentation, prototype) within specified deadlines.")
-    mih.add_rule("During presentations, clearly explain the problem statement, solution, and technical implementation.")
-    mih.add_rule("Projects are evaluated based on committee criteria. Judges' decisions are final.")
+    # 3. Project Guidelines
+    z.add_rule("Teams must select and develop a solution within one of the specified hackathon problem domains.")
+    z.add_rule("All submitted ideas and projects must be original. Plagiarism leads to disqualification.")
+    z.add_rule("Open-source libraries, APIs, datasets, and AI tools are allowed if licenses are properly acknowledged.")
     
-    return mih.rules
+    # 4. Evaluation & Submission
+    z.add_rule("Shortlisted teams must participate in all mandatory stages (idea screening, progress reviews, Grand Finale).")
+    z.add_rule("Teams must submit project materials (presentation, prototype) within specified deadlines.")
+    z.add_rule("Only the given PPT Template should be used for Presentations.")
+    z.add_rule("During presentations, clearly explain the problem statement, solution, and technical implementation.")
+    z.add_rule("Projects are evaluated based on committee criteria. Judges' decisions are final.")
+    
+    # 5. Finale & Announcements
+    z.add_rule("Winners and shortlisted teams may get development tools and internship opportunities from Microsoft.")
+    z.add_rule("Important announcements will be made through mail, website, and Instagram. Visit them often.")
+    z.add_rule("Finalists must carry the admit card for Finale Entry. Otherwise entry is prohibited.")
+    z.add_rule("For further queries contact us through Mail and provided phone numbers.")
+    
+    return z.rules
 
 if __name__ == "__main__":
-    rules = get_mih_rules()
-    print("=== ZEPHYR HACKATHON RULES ===")
+    rules = get_zephyr_rules()
+    print("=== ZEPHYR HACKATHON RULES ===\n")
     for idx, rule in enumerate(rules, 1):
-        print(f"{idx}. {rule}")`
+        print(f"{idx}. {rule}\n")`
 
 const afterCode = `=== ZEPHYR HACKATHON RULES ===
 
-1. Participants must adhere to the schedule, guidelines, and instructions communicated by the organizing committee.
+1. Registration fee of ₹500 will be collected only from teams who are shortlisted for Online round.
 
-2. Professional and respectful conduct towards other participants, mentors, judges, organizers, and guests is required. Any misconduct leads to disqualification.
+2. Each participant may be part of only one team. Changes require approval.
 
-3. Do not interfere with, copy, damage, or intentionally disrupt the work of other participants.
+3. Inter college teams are allowed.
 
-4. Each participant may be part of only one team. Changes require approval.
+4. Participants must adhere to the schedule, guidelines, and instructions communicated by the organizing committee.
 
-5. Teams must select and develop a solution within one of the specified hackathon problem domains.
+5. Professional and respectful conduct is required. Any misconduct leads to disqualification.
 
-6. All submitted ideas and projects must be original. Plagiarism leads to disqualification.
+6. Do not interfere with, copy, damage, or intentionally disrupt the work of other participants.
 
-7. Open-source libraries, APIs, datasets, and AI tools are allowed if licenses are properly acknowledged.
+7. Teams must select and develop a solution within one of the specified hackathon problem domains.
 
-8. Shortlisted teams must participate in all mandatory stages (idea screening, progress reviews, Grand Finale).
+8. All submitted ideas and projects must be original. Plagiarism leads to disqualification.
 
-9. Teams must submit project materials (presentation, prototype) within specified deadlines.
+9. Open-source libraries, APIs, datasets, and AI tools are allowed if licenses are properly acknowledged.
 
-10. During presentations, clearly explain the problem statement, solution, and technical implementation.
+10. Shortlisted teams must participate in all mandatory stages (idea screening, progress reviews, Grand Finale).
 
-11. Projects are evaluated based on committee criteria. Judges' decisions are final.`
+11. Teams must submit project materials (presentation, prototype) within specified deadlines.
+
+12. Only the given PPT Template should be used for Presentations.
+
+13. During presentations, clearly explain the problem statement, solution, and technical implementation.
+
+14. Projects are evaluated based on committee criteria. Judges' decisions are final.
+
+15. Winners and shortlisted teams may get development tools and internship opportunities from Microsoft.
+
+16. Important announcements will be made through mail, website, and Instagram. Visit them often.
+
+17. Finalists must carry the admit card for Finale Entry. Otherwise entry is prohibited.
+
+18. For further queries contact us through Mail and provided phone numbers.`
 
 export default function RulesSection() {
   return (

@@ -223,7 +223,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
 
                   <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <Button asChild variant="outline" className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50">
-                      <a href="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/PPT%20Template.pptx" download target="_blank" rel="noreferrer">
+                      <a href="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/Zephyr%20PPT%20Template.pptx" download target="_blank" rel="noreferrer">
                         <Download className="w-4 h-4" />
                         Download Zephyr Template
                       </a>
@@ -276,8 +276,20 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
 
               {currentRound === 2 && (
                 <>
-                  {paymentStatus === 'pending' && (
+                  {(paymentStatus === 'pending' || paymentStatus === 'rejected') && (
                     <div className="space-y-6">
+                      {paymentStatus === 'rejected' && (
+                        <div className="mb-6 p-4 rounded-xl border border-red-300 bg-red-50 flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                          <div>
+                            <h4 className="font-bold text-red-900 mb-1">Action Required: UTR Mismatch</h4>
+                            <p className="text-sm text-red-800">
+                              We were unable to verify your payment with the provided UTR (<strong>{teamData.payment_utr_number}</strong>). Please scan the QR code to complete the payment if you haven't, or enter the correct 12-digit UTR/Transaction Reference below.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="text-center mb-6">
                         <h3 className="text-xl font-bold text-slate-900 mb-2">Congratulations! You've qualified for Round 2.</h3>
                         <p className="text-slate-600 text-sm">
