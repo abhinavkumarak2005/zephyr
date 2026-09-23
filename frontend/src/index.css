@@ -199,7 +199,8 @@
   .hero {
     grid-template-columns: 1fr;
     padding-top: 60px;
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    padding-bottom: 60px;
+    min-height: auto;
   }
 }
 
@@ -560,7 +561,7 @@
   font-weight: 900;
   line-height: 1.2;
   letter-spacing: -0.04em;
-  font-size: clamp(48px, 6vw, 100px);
+  font-size: clamp(32px, 8vw, 100px);
   color: var(--color-ink);
   font-family: var(--font-display);
 }
@@ -798,6 +799,7 @@
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
   .hero__grid-bg {
     display: none;

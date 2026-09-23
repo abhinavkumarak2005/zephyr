@@ -7,7 +7,7 @@ import { MorphingCardStack } from '../components/ui/morphing-card-stack'
 import { AvailabilityCard } from '../components/ui/AvailabilityCard'
 import { AmountSlider, AmountReadout } from '../components/ui/amount-slider'
 import RulesSection from '../components/ui/RulesSection'
-import { Map, ShoppingCart, Leaf, ShieldAlert, Navigation, MonitorPlay, Dna, FlaskConical, Shield, Boxes } from 'lucide-react'
+import { Map, ShoppingCart, Leaf, ShieldAlert, Navigation, MonitorPlay, Dna, FlaskConical, Shield, Boxes, Instagram, Mail, Phone } from 'lucide-react'
 
 const Spline = lazy(() => import('@splinetool/react-spline'))
 
@@ -256,7 +256,7 @@ function TopHeader() {
           fontSize: '18px',
           letterSpacing: '-0.01em'
         }}>
-          Grand Finale : <span style={{ color: '#60a5fa' }}>&lt;date&gt;</span>October 21-2026<span style={{ color: '#60a5fa' }}>&lt;/date&gt;</span>
+          Grand Finale : <span style={{ color: '#60a5fa' }}>&lt;date&gt;</span>October 22-2026<span style={{ color: '#60a5fa' }}>&lt;/date&gt;</span>
         </span>
       </div>
     </header>
@@ -435,7 +435,7 @@ const TIMELINE = [
   { id: 3, day: 6, month: "Oct" },
   { id: 4, day: "??", month: "TBA" },
   { id: 5, day: 13, month: "Oct" },
-  { id: 6, day: 21, month: "Oct" },
+  { id: 6, day: 22, month: "Oct" },
 ]
 
 const TIMELINE_DETAILS = {
@@ -614,8 +614,8 @@ function PrizesSection() {
 
   // Label based on amount
   const getPrizeLabel = (val) => {
-    if (val === 25000) return "Grand Prize (1st)"
-    if (val === 20000) return "Runner Up (2nd)"
+    if (val === 30000) return "Grand Prize (1st)"
+    if (val === 25000) return "Runner Up (2nd)"
     return "Second Runner Up (3rd)"
   }
 
@@ -665,12 +665,12 @@ function PrizesSection() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="h-12 mt-6 w-full rounded-xl bg-[#0b1120] text-[15px] font-bold text-white transition-all duration-150 hover:bg-[#1a2535] hover:shadow-lg active:scale-[0.98]"
+          <Link
+            to="/auth"
+            className="flex items-center justify-center h-12 mt-6 w-full rounded-xl bg-[#0b1120] text-[15px] font-bold text-white transition-all duration-150 hover:bg-[#1a2535] hover:shadow-lg active:scale-[0.98]"
           >
             Register for Zéphyr
-          </button>
+          </Link>
         </div>
       </div>
     </section>
@@ -851,22 +851,40 @@ function ContactSection() {
         <h2 className="display-heading display-sm" style={{ color: 'var(--color-ink)', marginBottom: 24 }}>
           Get in <span className="text-highlight">Touch</span>
         </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-          <p style={{ fontSize: '18px', color: 'var(--color-ink)' }}>
-            <strong>Email:</strong> <a href="mailto:zephyr@ptuniv.edu.in" className="text-blue-600 hover:underline">zephyr@ptuniv.edu.in</a>
-          </p>
-          <div style={{ fontSize: '18px', color: 'var(--color-ink)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <strong>Phone:</strong> 
-            <a href="tel:+919385910261" className="text-blue-600 hover:underline inline-flex items-center gap-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              +91 93859 10261
-            </a>
-            <span className="text-slate-400">,</span>
-            <a href="tel:+918300949377" className="text-blue-600 hover:underline inline-flex items-center gap-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              +91 83009 49377
-            </a>
+        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start justify-center text-lg text-slate-800">
+          
+          {/* Email */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <Mail className="w-5 h-5 text-blue-600" /> Email
+            </div>
+            <a href="mailto:zephyr@ptuniv.edu.in" className="text-blue-600 hover:underline">zephyr@ptuniv.edu.in</a>
           </div>
+
+          {/* Phone */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <Phone className="w-5 h-5 text-blue-600" /> Phone
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <a href="tel:+919385910261" className="text-blue-600 hover:underline">+91 93859 10261</a>
+              <span className="hidden sm:inline text-slate-300">|</span>
+              <a href="tel:+918300949377" className="text-blue-600 hover:underline">+91 83009 49377</a>
+            </div>
+          </div>
+
+          {/* Instagram */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <Instagram className="w-5 h-5 text-pink-600" /> Instagram
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <a href="https://www.instagram.com/_cse_ptu_/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">@_cse_ptu_</a>
+              <span className="hidden sm:inline text-slate-300">|</span>
+              <a href="https://www.instagram.com/zephyr_2k26/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">@zephyr_2k26</a>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -943,20 +961,20 @@ export default function Landing() {
             backgroundSize: '24px 24px',
           }} />
 
-          <div style={{ textAlign: 'center', marginBottom: 40, position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 40, position: 'relative' }}>
             <h2 className="display-heading display-md">Faculty <span className="text-highlight">Coordinators</span></h2>
           </div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ position: 'relative' }}>
             <FacultyShowcase />
           </div>
 
-          <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 80, position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 80, position: 'relative' }}>
             <h2 className="display-heading display-md">Meet the <span className="text-highlight">Team</span></h2>
             <p className="px-6 md:px-0 max-w-2xl mx-auto" style={{ color: 'var(--color-muted)', fontSize: 16, marginTop: 12 }}>
               The people working behind the scenes to make Zéphyr Hackathon a reality.
             </p>
           </div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ position: 'relative' }}>
             <TeamShowcase />
           </div>
         </section>
