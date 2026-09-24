@@ -293,15 +293,15 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                       <div className="text-center mb-6">
                         <h3 className="text-xl font-bold text-slate-900 mb-2">Congratulations! You've qualified for Round 2.</h3>
                         <p className="text-slate-600 text-sm">
-                          To participate in the live online presentations, a registration fee of ₹1,000 is required.
+                          To participate in the live online presentations, a registration fee of ₹500 is required.
                         </p>
                       </div>
                       
                       <div className="flex flex-col md:flex-row gap-8 items-center md:items-start bg-slate-50 p-6 rounded-2xl border border-slate-200">
                         <div className="shrink-0 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center">
-                          <QrCode className="w-32 h-32 text-slate-800 mb-3 opacity-80" />
+                          <img src="/payment-qr.png" alt="Payment QR Code" className="w-32 h-32 object-contain mb-3" />
                           <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Scan to Pay</span>
-                          <span className="text-lg font-bold text-slate-900 mt-1">₹1,000</span>
+                          <span className="text-lg font-bold text-slate-900 mt-1">₹500</span>
                         </div>
                         
                         <div className="flex-1 w-full">
@@ -316,9 +316,15 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                               <Input 
                                 required
                                 value={utr}
-                                onChange={(e) => setUtr(e.target.value)}
+                                onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 12))}
                                 placeholder="e.g. 123456789012"
                                 disabled={!isLeader}
+                                pattern="\d{12}"
+                                minLength={12}
+                                maxLength={12}
+                                title="Please enter exactly 12 digits"
+                                type="text"
+                                inputMode="numeric"
                               />
                             </div>
                             {isLeader && (
@@ -460,9 +466,17 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
               <CardContent className="p-6">
                 <h4 className="font-bold text-slate-900 mb-2">Need Help?</h4>
                 <p className="text-sm text-slate-600 mb-4">If you have any questions or face technical issues, please reach out to our support team.</p>
-                <a href="mailto:zephyr@ptuniv.edu.in" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
-                  Contact Support <ArrowRight className="w-4 h-4" />
-                </a>
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-semibold text-slate-700">Email:</span>
+                    <a href="mailto:zephyr@ptuniv.edu.in" className="text-blue-600 hover:underline">zephyr@ptuniv.edu.in</a>
+                  </div>
+                  <div className="flex flex-col gap-1 text-sm">
+                    <span className="font-semibold text-slate-700">Phone:</span>
+                    <a href="tel:+919385910261" className="text-blue-600 hover:underline">+91 93859 10261</a>
+                    <a href="tel:+918300949377" className="text-blue-600 hover:underline">+91 83009 49377</a>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

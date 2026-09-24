@@ -126,7 +126,7 @@ export default function AdminDashboard() {
       const leader = team.team_members?.find(m => m.is_leader);
       if (leader?.email) {
         try {
-          const htmlContent = getUtrMismatchEmailTemplate(leader.full_name, team.team_name, 'https://zephyrptu.site/dashboard');
+          const htmlContent = getUtrMismatchEmailTemplate(leader.name || 'Team Leader', team.team_name, 'https://zephyrptu.site/dashboard');
           
           await supabase.functions.invoke('send-email', {
             body: {
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
             }
           });
           
-          alert(`Rejection email successfully sent to ${leader.email}`);
+          alert(`Reminder email successfully sent to ${leader.email} to update their UTR`);
         } catch (error) {
           console.error("Failed to send email", error);
           alert('Status updated, but failed to send email. Check console.');
