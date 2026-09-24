@@ -277,17 +277,19 @@ export default function AdminDashboard() {
     return filteredTeams;
   };
 
-  const handleBroadcastNotice = async (e) => {
+  const handleBroadcastNotice = async (e, clear = false) => {
     e?.preventDefault();
-    if (!noticeText.trim()) return;
+    const newText = clear ? null : noticeText;
+    if (!clear && !noticeText.trim()) return;
+
     setNoticeLoading(true);
-    await supabase.from('global_settings').update({ broadcast_notice: noticeText }).eq('id', 1);
+    await supabase.from('global_settings').upsert({ id: 1, broadcast_notice: newText, registration_status: globalSettings?.registration_status || 'auto' });
     
     setIsNoticeModalOpen(false);
     setNoticeText('');
     setNoticeLoading(false);
     fetchTeams();
-    alert('Notice broadcasted globally to all teams!');
+    alert(clear ? 'Notice removed!' : 'Notice broadcasted globally to all teams!');
   };
 
   const handleUpdateRegistrationStatus = async (status) => {
@@ -397,7 +399,7 @@ export default function AdminDashboard() {
         
         <div className="p-4 mt-auto border-t border-[#d2d2d7]/50 flex flex-col gap-2">
           <button 
-            onClick={() => setIsNoticeModalOpen(true)}
+            onClick={() => { setNoticeText(globalSettings?.broadcast_notice || ''); setIsNoticeModalOpen(true); }}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all font-medium text-sm border border-blue-200"
           >
             <Send className="w-4 h-4" /> Global Notice
@@ -428,7 +430,7 @@ export default function AdminDashboard() {
                 <span className="font-bold text-lg text-slate-900">Admin Console</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setIsNoticeModalOpen(true)} className="p-2 text-blue-600 bg-blue-50 rounded-lg border border-blue-100"><Send className="w-4 h-4" /></button>
+                <button onClick={() => { setNoticeText(globalSettings?.broadcast_notice || ''); setIsNoticeModalOpen(true); }} className="p-2 text-blue-600 bg-blue-50 rounded-lg border border-blue-100"><Send className="w-4 h-4" /></button>
                 <button onClick={() => { localStorage.removeItem('isAdminAuthenticated'); navigate('/admin-login'); }} className="p-2 text-red-600 bg-red-50 rounded-lg border border-red-100"><LogOut className="w-4 h-4" /></button>
               </div>
             </div>
@@ -1286,11 +1288,16 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
-              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <Button type="button" onClick={() => setIsNoticeModalOpen(false)} variant="outline" className="rounded-xl">Cancel</Button>
-                <Button type="submit" disabled={noticeLoading || !noticeText.trim()} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6">
-                  {noticeLoading ? 'Sending...' : 'Broadcast Notice'}
-                </Button>
+              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                {globalSettings?.broadcast_notice ? (
+                  <Button type="button" onClick={(e) => handleBroadcastNotice(e, true)} variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl">Clear Notice</Button>
+                ) : <div />}
+                <div className="flex gap-3">
+                  <Button type="button" onClick={() => setIsNoticeModalOpen(false)} variant="outline" className="rounded-xl">Cancel</Button>
+                  <Button type="submit" disabled={noticeLoading || !noticeText.trim()} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6">
+                    {noticeLoading ? 'Saving...' : 'Broadcast Notice'}
+                  </Button>
+                </div>
               </div>
             </form>
           </motion.div>

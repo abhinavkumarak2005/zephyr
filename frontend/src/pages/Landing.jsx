@@ -98,7 +98,25 @@ const PRIZES = [
 
 const FAQS = [
   { q: 'Who can participate?', a: 'Any currently enrolled student. Teams of 2–4 members from any institution. Inter-college teams are allowed.' },
-  { q: 'How does the selection process work?', a: 'Round 1 is an idea screening round. Shortlisted teams will be notified and advance to the next rounds.' },
+  { 
+    q: 'How does the selection process work?', 
+    a: (
+      <div className="space-y-4 text-slate-600 leading-relaxed">
+        <div>
+          <span className="font-semibold text-slate-800">Round 1 – PPT Submission:</span><br />
+          Teams will be shortlisted based on the PowerPoint presentation (PPT) submitted during the initial round.
+        </div>
+        <div>
+          <span className="font-semibold text-slate-800">Round 2 – Online Screening:</span><br />
+          Shortlisted teams will participate in an online screening round, based on which the finalists will be selected.
+        </div>
+        <div>
+          <span className="font-semibold text-slate-800">Round 3 – Offline Final Presentation:</span><br />
+          The finalists will present their solutions offline at Puducherry Technological University (PTU) before a panel of judges.
+        </div>
+      </div>
+    ) 
+  },
   { q: 'What is the registration fee?', a: 'A registration fee of ₹500 is collected ONLY from teams shortlisted for the Online round. You must enter a valid and correct UTR ID to confirm your payment.' },
   { q: 'Can I change my problem statement after registering?', a: 'No. Your problem statement is locked upon registration.' },
   { q: 'How will results be published?', a: 'Results will appear on your dashboard after review, and announcements will be made via email and Instagram.' },
@@ -372,7 +390,7 @@ function HeroSection({ visible }) {
           marginTop: 28, fontSize: 15, color: 'var(--color-muted)',
           letterSpacing: '-0.02em', lineHeight: 1.6, maxWidth: 400,
         }}>
-          A Microsoft Community Event × PTU national-level hackathon. Build AI solutions across diverse domains for real prizes and recognition.
+          A Microsoft Community Event × Puducherry Technological University national-level hackathon. Build AI solutions across diverse domains for real prizes and recognition.
         </p>
 
         <p style={{
@@ -433,7 +451,7 @@ const TIMELINE = [
   { id: 1, day: 24, month: "Sept" },
   { id: 2, day: 4, month: "Oct" },
   { id: 3, day: 6, month: "Oct" },
-  { id: 4, day: "??", month: "TBA" },
+  { id: 4, day: 10, month: "Oct" },
   { id: 5, day: 13, month: "Oct" },
   { id: 6, day: 22, month: "Oct" },
 ]
@@ -442,7 +460,7 @@ const TIMELINE_DETAILS = {
   1: { title: 'Registration Starts', desc: 'Registrations open for all eligible participants.' },
   2: { title: 'Registration Ends', desc: 'Deadline to submit your team applications (11 days).' },
   3: { title: 'Shortlist Announcement', desc: 'Selected teams advance to the next round.' },
-  4: { title: 'Online Round', desc: 'To be Announced Soon.' },
+  4: { title: 'Online Round', desc: 'Live online presentations for shortlisted teams.' },
   5: { title: 'Finalists Announcement', desc: 'Top teams selected for the Grand Finale.' },
   6: { title: 'Grand Finale', desc: 'Offline Grand Finale and prize distribution.' },
 }
