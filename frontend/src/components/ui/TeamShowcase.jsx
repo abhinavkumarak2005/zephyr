@@ -9,15 +9,18 @@ const DEFAULT_MEMBERS = [
   { id: '4', name: 'Shreeharan S', role: 'Media and Marketing Head', image: '/team/Shreeharan_S.jpg', social: { linkedin: 'https://www.linkedin.com/in/shreeharan-s-482505399' } },
   { id: '5', name: 'Lokesh T', role: 'Media and Marketing', image: '/team/Lokesh_T.png', social: { linkedin: 'https://www.linkedin.com/in/lokesh-kumar-282473351?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
   { id: '6', name: 'M.Mani Pavan', role: 'Organizing', image: '/team/MMani_Pavan.jpeg', social: {} },
-  { id: '7', name: 'Harisudhan VS', role: 'Technical', image: '/team/Harisudhan_VS.jpg', social: { linkedin: 'https://www.linkedin.com/in/harisudhan-v-s-aa71a039a?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
-  { id: '8', name: 'Ram V R', role: 'Organizing', image: '/team/Ram_V_R.jpg', social: { linkedin: 'https://www.linkedin.com/in/ram-v-r-383936410?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
-  { id: '9', name: 'Yashvandhika K', role: 'Organizing', image: '/team/Yashvandhika_Krishnasamy.jpg', social: { linkedin: 'https://www.linkedin.com/in/yashvandhika-krishnasamy-b001b5418?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
-  { id: '10', name: 'Revu Kavitha', role: 'Organizing', image: '/team/Revu_Kavitha.jpg', social: { linkedin: 'https://www.linkedin.com/in/revu-kavitha/' } },
-  { id: '11', name: 'Jeishvanth B', role: 'Media and Marketing', image: '/team/Jeishvanth_B.webp', social: { linkedin: 'https://www.linkedin.com/in/jeishvanth-b-a30768283?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
-  { id: '12', name: 'Preethii V', role: 'Technical', image: '/team/Preethii_V.jpg', social: { linkedin: 'https://www.linkedin.com/in/preethii-v-68a806339' } },
-  { id: '13', name: 'NITHIN G M', role: 'Technical', image: '/team/NITHIN_G_M.jpeg', social: { linkedin: 'https://www.linkedin.com/in/nithin-g-m-146699352' } },
-  { id: '14', name: 'Rakshana S', role: 'Media and Marketing', image: '/team/Rakshana_S.jpeg', social: { linkedin: 'https://www.linkedin.com/in/rakshana-srinivassan10?utm_source=share_via&utm_content=profile&utm_medium=member_ios' } },
-  { id: '15', name: 'Subashini Sree R', role: 'Media and Marketing', image: '/team/Subashini_Sree_R.jpg', social: {} },
+  { id: '7', name: 'Vishnu Vardhan R', role: 'Media and Marketing', image: '/team/Vishnu_Vardhan_R.jpg', social: {} },
+  { id: '8', name: 'Harisudhan VS', role: 'Technical', image: '/team/Harisudhan_VS.jpg', social: { linkedin: 'https://www.linkedin.com/in/harisudhan-v-s-aa71a039a?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
+  { id: '9', name: 'Ram V R', role: 'Organizing', image: '/team/Ram.jpeg', social: { linkedin: 'https://www.linkedin.com/in/ram-v-r-383936410?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
+  { id: '10', name: 'Yashvandhika K', role: 'Organizing', image: '/team/Yashvandhika_Krishnasamy.jpg', social: { linkedin: 'https://www.linkedin.com/in/yashvandhika-krishnasamy-b001b5418?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
+  { id: '11', name: 'Revu Kavitha', role: 'Organizing', image: '/team/Revu_Kavitha.jpg', social: { linkedin: 'https://www.linkedin.com/in/revu-kavitha/' } },
+  { id: '12', name: 'Jeishvanth B', role: 'Media and Marketing', image: '/team/Jeishvanth_B.webp', social: { linkedin: 'https://www.linkedin.com/in/jeishvanth-b-a30768283?utm_source=share_via&utm_content=profile&utm_medium=member_android' } },
+  { id: '13', name: 'Preethii V', role: 'Technical', image: '/team/Preethii_V.jpg', social: { linkedin: 'https://www.linkedin.com/in/preethii-v-68a806339' } },
+  { id: '14', name: 'NITHIN G M', role: 'Technical', image: '/team/NITHIN_G_M.jpeg', social: { linkedin: 'https://www.linkedin.com/in/nithin-g-m-146699352' } },
+  { id: '15', name: 'Rakshana S', role: 'Media and Marketing', image: '/team/Rakshana_S.jpeg', social: { linkedin: 'https://www.linkedin.com/in/rakshana-srinivassan10?utm_source=share_via&utm_content=profile&utm_medium=member_ios' } },
+  { id: '16', name: 'Subashini Sree R', role: 'Media and Marketing', image: '/team/Subashini_Sree_R.jpg', social: {} },
+  { id: '17', name: 'Pratham Kumar Bhuyan', role: 'Media and Marketing', image: '/team/Pratham_Kumar_Bhuyan.jpeg', social: {} },
+
 ];
 
 export default function TeamShowcase({ members = DEFAULT_MEMBERS }) {
@@ -25,9 +28,24 @@ export default function TeamShowcase({ members = DEFAULT_MEMBERS }) {
 
   const activeMember = hoveredId ? members.find(m => m.id === hoveredId) : null;
 
-  const col1 = members.filter((_, i) => i % 3 === 0);
-  const col2 = members.filter((_, i) => i % 3 === 1);
-  const col3 = members.filter((_, i) => i % 3 === 2);
+  const col1 = [];
+  const col2 = [];
+  const col3 = [];
+
+  members.forEach((m, i) => {
+    if (i % 3 === 0) {
+      col1.push(m);
+    } else if (i % 3 === 1) {
+      // Balance the grid by moving the last item to col3 if it falls in col2
+      if (i === members.length - 1) {
+        col3.push(m);
+      } else {
+        col2.push(m);
+      }
+    } else {
+      col3.push(m);
+    }
+  });
 
   return (
     <div className="flex flex-col md:flex-row items-start gap-8 md:gap-10 lg:gap-14 select-none w-full max-w-5xl mx-auto py-8 px-4 md:px-6 font-sans relative">
