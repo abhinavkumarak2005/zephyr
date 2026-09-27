@@ -53,11 +53,22 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const verifySession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        localStorage.removeItem('isAdminAuthenticated');
+        navigate('/admin-login');
+        return;
+      }
+      fetchTeams();
+    };
+
     if (localStorage.getItem('isAdminAuthenticated') !== 'true') {
       navigate('/admin-login');
       return;
     }
-    fetchTeams();
+    
+    verifySession();
   }, [navigate]);
 
   const fetchTeams = async () => {
