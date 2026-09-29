@@ -12,6 +12,8 @@ export default function AdminDashboard() {
   const [evaluations, setEvaluations] = useState([]);
   const [problemStatements, setProblemStatements] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
+  const [judges, setJudges] = useState([]);
+  const [judgeAssignments, setJudgeAssignments] = useState([]);
   const [metrics, setMetrics] = useState({ profileCount: 0 });
   const [globalSettings, setGlobalSettings] = useState({ broadcast_notice: '', registration_status: 'auto' });
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,15 @@ export default function AdminDashboard() {
       .select('*')
       .order('created_at', { ascending: true });
 
+    const { data: judgeData } = await supabase
+      .from('judges')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    const { data: assignData } = await supabase
+      .from('judge_assignments')
+      .select('*');
+
     const { data: psData } = await supabase.from('problem_statements').select('*').order('id', { ascending: true });
     const { count: profileCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const { data: settingsData } = await supabase.from('global_settings').select('*').eq('id', 1).single();
@@ -94,6 +105,8 @@ export default function AdminDashboard() {
     if (!teamErr) setTeams(teamData || []);
     if (!evalErr) setEvaluations(evalData || []);
     if (volData) setVolunteers(volData);
+    if (judgeData) setJudges(judgeData);
+    if (assignData) setJudgeAssignments(assignData);
     if (psData) setProblemStatements(psData);
     if (settingsData) setGlobalSettings(settingsData);
     setMetrics({ profileCount: profileCount || 0 });
@@ -358,6 +371,47 @@ export default function AdminDashboard() {
     }
   };
 
+  const [newJudgeEmail, setNewJudgeEmail] = useState('');
+  const [newJudgePassword, setNewJudgePassword] = useState('');
+  const [newJudgeName, setNewJudgeName] = useState('');
+
+  const handleAddJudge = async (e) => {
+    e.preventDefault();
+    if (!newJudgeEmail || !newJudgePassword || !newJudgeName) return;
+    
+    const { error } = await supabase.from('judges').insert([{
+      email: newJudgeEmail,
+      password: newJudgePassword,
+      name: newJudgeName
+    }]);
+
+    if (error) {
+      alert(error.message);
+    } else {
+      setNewJudgeEmail('');
+      setNewJudgePassword('');
+      setNewJudgeName('');
+      fetchTeams();
+    }
+  };
+
+  const handleDeleteJudge = async (id) => {
+    if (window.confirm('Are you sure you want to delete this judge?')) {
+      await supabase.from('judges').delete().eq('id', id);
+      fetchTeams();
+    }
+  };
+
+  const handleAssignJudge = async (teamId, judgeId) => {
+    if (!judgeId || judgeId === '-') {
+      await supabase.from('judge_assignments').delete().eq('team_id', teamId);
+    } else {
+      await supabase.from('judge_assignments').delete().eq('team_id', teamId);
+      await supabase.from('judge_assignments').insert([{ team_id: teamId, judge_id: judgeId }]);
+    }
+    fetchTeams();
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-[#f5f5f7] text-[#1d1d1f] font-sans selection:bg-blue-200">
       
@@ -399,6 +453,10 @@ export default function AdminDashboard() {
 
           <button onClick={() => setActiveTab('volunteers')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'volunteers' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
             <div className="flex items-center gap-3"><ShieldCheck className="w-4 h-4" /><span className="font-medium text-sm">Volunteers</span></div>
+          </button>
+          
+          <button onClick={() => setActiveTab('judges')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'judges' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
+            <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span className="font-medium text-sm">Judges</span></div>
           </button>
           
           <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
@@ -454,7 +512,8 @@ export default function AdminDashboard() {
                 { id: 'round2', label: 'Round 2' },
                 { id: 'round3', label: 'Round 3' },
                 { id: 'roster', label: 'Team Roster' },
-                { id: 'volunteers', label: 'Volunteers' }
+                { id: 'volunteers', label: 'Volunteers' },
+                { id: 'judges', label: 'Judges' }
               ].map(tab => (
                 <button 
                   key={tab.id}
@@ -750,6 +809,7 @@ export default function AdminDashboard() {
                           <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
+                            <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Assigned Judge</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Score</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Action</th>
                           </tr>
@@ -767,6 +827,23 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="py-4 px-4 text-sm max-w-[300px] truncate">
                                   PS-{team.problem_statement_id}: {team.problem_statements?.title}
+                                </td>
+                                <td className="py-4 px-4">
+                                  <select
+                                    className="border border-slate-200 rounded-md text-sm p-1.5 focus:ring-2 focus:ring-blue-500 w-full max-w-[150px]"
+                                    value={judgeAssignments.find(ja => ja.team_id === team.id)?.judge_id || '-'}
+                                    onChange={(e) => handleAssignJudge(team.id, e.target.value)}
+                                  >
+                                    <option value="-">Unassigned</option>
+                                    {judges.map(j => (
+                                      <option key={j.id} value={j.id}>{j.name}</option>
+                                    ))}
+                                  </select>
+                                  {evalData?.judge_id && (
+                                    <div className="text-[10px] text-slate-400 mt-1">
+                                      Graded by: {judges.find(j => j.id === evalData.judge_id)?.name || 'Unknown'}
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="py-4 px-4 text-sm font-medium">
                                   {evalData ? (
@@ -795,7 +872,7 @@ export default function AdminDashboard() {
                             );
                           })}
                           {r2TeamsEvaluations.length === 0 && (
-                            <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No teams are ready for evaluation yet.</td></tr>
+                            <tr><td colSpan="5" className="text-center py-12 text-[#86868b]">No teams are ready for evaluation yet.</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1142,6 +1219,74 @@ export default function AdminDashboard() {
                             ))}
                             {volunteers.length === 0 && (
                               <tr><td colSpan="3" className="text-center py-12 text-[#86868b]">No volunteers created yet.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* JUDGES TAB */}
+              {activeTab === 'judges' && (
+                <motion.div key="judges" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <div className="mb-8">
+                    <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Judge Management</h1>
+                    <p className="text-[#86868b]">Manage judge accounts for evaluations.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-1">
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50">
+                        <h3 className="font-bold text-[#1d1d1f] mb-4">Add Judge</h3>
+                        <form onSubmit={handleAddJudge} className="space-y-4">
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Name</label>
+                            <Input placeholder="Judge Name" value={newJudgeName} onChange={e => setNewJudgeName(e.target.value)} required className="w-full" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Email</label>
+                            <Input type="email" placeholder="Email Address" value={newJudgeEmail} onChange={e => setNewJudgeEmail(e.target.value)} required className="w-full" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Password</label>
+                            <Input placeholder="Password" value={newJudgePassword} onChange={e => setNewJudgePassword(e.target.value)} required className="w-full" />
+                          </div>
+                          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Create Account</Button>
+                        </form>
+                      </div>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Name</th>
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Email & Password</th>
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#d2d2d7]/50">
+                            {judges.map(judge => (
+                              <tr key={judge.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                                <td className="py-4 px-6 font-semibold text-[#1d1d1f]">{judge.name}</td>
+                                <td className="py-4 px-6 text-sm text-[#1d1d1f]">
+                                  <div>{judge.email}</div>
+                                  <div className="text-slate-500 font-mono text-xs mt-1">pwd: {judge.password}</div>
+                                </td>
+                                <td className="py-4 px-6 text-right">
+                                  <Button size="sm" variant="outline" onClick={() => handleDeleteJudge(judge.id)} className="text-red-600 border-red-200 hover:bg-red-50">
+                                    Delete
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                            {judges.length === 0 && (
+                              <tr><td colSpan="3" className="text-center py-12 text-[#86868b]">No judges created yet.</td></tr>
                             )}
                           </tbody>
                         </table>
