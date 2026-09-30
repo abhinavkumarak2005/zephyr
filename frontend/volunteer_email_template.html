@@ -1,126 +1,203 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to the Zephyr Volunteer Team</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f5f5f7;
-            margin: 0;
-            padding: 0;
-            color: #1d1d1f;
-        }
-        .container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-        }
-        .header {
-            background: #000000;
-            padding: 32px 40px;
-            text-align: center;
-        }
-        .header h1 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 24px;
-            letter-spacing: -0.5px;
-        }
-        .content {
-            padding: 40px;
-        }
-        .content h2 {
-            margin-top: 0;
-            font-size: 20px;
-            color: #1d1d1f;
-        }
-        .content p {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #424245;
-            margin-bottom: 20px;
-        }
-        .credentials-box {
-            background: #f5f5f7;
-            border-radius: 12px;
-            padding: 24px;
-            margin: 32px 0;
-            border: 1px solid #d2d2d7;
-        }
-        .credentials-box h3 {
-            margin-top: 0;
-            font-size: 16px;
-            color: #1d1d1f;
-            margin-bottom: 12px;
-        }
-        .credentials-box p {
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        .credentials-box strong {
-            color: #1d1d1f;
-        }
-        .button-container {
-            text-align: center;
-            margin: 32px 0;
-        }
-        .button {
-            display: inline-block;
-            background-color: #0066cc;
-            color: #ffffff !important;
-            text-decoration: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-        }
-        .footer {
-            padding: 24px 40px;
-            background: #f5f5f7;
-            text-align: center;
-            font-size: 12px;
-            color: #86868b;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZÉPHYR 2026 - Volunteer Credentials</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .email-wrapper {
+      width: 100%;
+      background-color: #f8fafc;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+
+    .email-content {
+      max-width: 650px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .hero-section {
+      width: 100%;
+      background-color: #ffffff;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .robot-image {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .body-section {
+      padding: 40px;
+      text-align: left;
+      line-height: 1.6;
+      font-size: 16px;
+      color: #334155;
+    }
+
+    .body-section p {
+      margin: 0 0 16px 0;
+    }
+
+    .highlight-box {
+      background-color: #f1f5f9;
+      border-left: 4px solid #3898ec;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .highlight-box ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .highlight-box li {
+      margin-bottom: 8px;
+    }
+
+    .highlight-box li:last-child {
+      margin-bottom: 0;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background-color: #2563eb;
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 12px;
+      margin: 12px 0;
+      text-align: center;
+    }
+
+    .whatsapp-button {
+      display: inline-block;
+      background-color: #25D366;
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 12px;
+      margin: 12px 0;
+      text-align: center;
+    }
+
+    .footer {
+      padding: 24px 40px;
+      background-color: #0b1120;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .email-wrapper {
+        padding: 20px 10px;
+      }
+
+      .body-section {
+        padding: 24px 20px;
+      }
+
+      .footer {
+        padding: 20px;
+      }
+
+      .highlight-box {
+        padding: 16px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>ZÉPHYR 2026</h1>
-        </div>
-        <div class="content">
-            <h2>Welcome to the Team! 🎉</h2>
-            <p>Hello,</p>
-            <p>Congratulations! You have been selected as a volunteer for <strong>ZÉPHYR 2026</strong>. We are thrilled to have you onboard to help make this event a grand success.</p>
-            <p>Your primary responsibility will be managing the QR Check-in system and assisting participants on the day of the event.</p>
-            
-            <div class="credentials-box">
-                <h3>Your Portal Access</h3>
-                <p><strong>Username:</strong> Your registered Email ID</p>
-                <p><strong>Password:</strong> Your Mobile Number</p>
-            </div>
+  <div class="email-wrapper">
+    <div class="email-content">
 
-            <div class="button-container">
-                <a href="https://zephyrptu.site/volunteer-login" class="button">Access Volunteer Portal</a>
-            </div>
+      <div class="hero-section">
+        <img src="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/head.jpg"
+          alt="Zephyr Hackathon" class="robot-image" />
+      </div>
 
-            <p>Please log in to the portal as soon as possible to ensure your credentials are working. If you face any issues, reply to this email.</p>
-            <p>See you at the event!</p>
-            
-            <p style="margin-top: 32px; font-weight: 600; color: #1d1d1f;">
-                Best regards,<br>
-                The ZÉPHYR Team
-            </p>
+      <div class="body-section">
+        <p><strong>Hi Volunteer,</strong></p>
+
+        <p>Welcome aboard! Thank you for volunteering for <strong>ZÉPHYR 2026</strong>, a National Level AI Hackathon
+          organized as a Microsoft Community Event in association with Puducherry Technological University.</p>
+
+        <p>Your volunteer account has been created. Here are your login credentials:</p>
+
+        <div class="highlight-box">
+          <p style="font-weight: 600; margin-bottom: 12px; color: #0f172a;">Your Credentials:</p>
+          <ul>
+            <li><strong>Username:</strong> The email address you provided in the Google Form</li>
+            <li><strong>Password:</strong> The mobile number you provided in the Google Form</li>
+          </ul>
         </div>
-        <div class="footer">
-            &copy; 2026 Puducherry Technological University. All rights reserved.<br>
-            If you did not expect this email, please ignore it.
-        </div>
+
+        <p style="font-weight: 600; color: #0f172a;">Your Role in the Dashboard:</p>
+        <p>Your primary role within the dashboard is to <strong>check-in teams</strong> on the event day. You will
+          simply scan the team's QR code to verify their details and admit them.</p>
+
+        <p><em>Note: There are many other exciting volunteer roles available! To learn about and choose other roles,
+            please join our WhatsApp group below.</em></p>
+
+        <center>
+          <a href="https://zephyrptu.site/volunteer" class="cta-button">Access Volunteer Dashboard</a>
+        </center>
+
+        <p style="margin-top: 24px;">Please join the official WhatsApp group for all important updates, role
+          assignments, and internal communication:</p>
+
+        <center>
+          <a href="https://chat.whatsapp.com/BHT1wh9PTNCAkt29N2VASd?mode=gi_t" class="whatsapp-button">Join WhatsApp
+            Group</a>
+        </center>
+
+        <p style="margin-top: 32px;">If you face any issues logging in, please reach out to the core team.</p>
+
+        <p style="margin-top: 32px;">
+          With warm regards,<br />
+          <strong>The Organizing Committee, ZÉPHYR</strong><br />
+          Department of Computer Science and Engineering,<br />
+          Puducherry Technological University.
+        </p>
+      </div>
+
+      <div class="footer">
+        <p class="footer-text">ZÉPHYR Hackathon 2026 • Microsoft Community Event</p>
+        <p class="footer-text" style="margin-top: 8px;">Puducherry Technological University, Puducherry</p>
+      </div>
+
     </div>
+  </div>
 </body>
+
 </html>

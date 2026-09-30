@@ -20,7 +20,7 @@ const DotArrowIcon = ({ color = '#0b1120', bg = '#e8b840', size = 36 }) => (
   <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
     <rect width="36" height="36" fill={bg} />
     {/* dot grid */}
-    {[8,14,20,26].map(x => [8,14,20,26].map(y => (
+    {[8, 14, 20, 26].map(x => [8, 14, 20, 26].map(y => (
       <circle key={`${x}-${y}`} cx={x} cy={y} r={1.2} fill={color} opacity={0.6} />
     )))}
     {/* arrow */}
@@ -32,13 +32,13 @@ const DotArrowIcon = ({ color = '#0b1120', bg = '#e8b840', size = 36 }) => (
    Data
 ───────────────────────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
-  { label: 'Overview',           href: '#overview', color: '#4b6cf7', textColor: '#ffffff' },
-  { label: 'Why join us?',       href: '#why',      color: '#e8b840', textColor: '#0b1120' },
-  { label: 'Problem Statements', href: '#tracks',   color: '#e8631a', textColor: '#ffffff' },
-  { label: 'Prizes',             href: '#prizes',   color: '#e2bfff', textColor: '#0b1120' },
-  { label: 'Rules',              href: '#rules',    color: '#bbf7d0', textColor: '#0b1120' },
-  { label: 'Team',               href: '#team',     color: '#fca5a5', textColor: '#0b1120' },
-  { label: 'FAQ',                href: '#faq',      color: '#6366f1', textColor: '#ffffff' },
+  { label: 'Overview', href: '#overview', color: '#4b6cf7', textColor: '#ffffff' },
+  { label: 'Why join us?', href: '#why', color: '#e8b840', textColor: '#0b1120' },
+  { label: 'Problem Statements', href: '#tracks', color: '#e8631a', textColor: '#ffffff' },
+  { label: 'Prizes', href: '#prizes', color: '#e2bfff', textColor: '#0b1120' },
+  { label: 'Rules', href: '#rules', color: '#bbf7d0', textColor: '#0b1120' },
+  { label: 'Team', href: '#team', color: '#fca5a5', textColor: '#0b1120' },
+  { label: 'FAQ', href: '#faq', color: '#6366f1', textColor: '#ffffff' },
 ]
 
 const TRACKS = [
@@ -55,12 +55,12 @@ const TRACKS = [
 ]
 
 const WHY_ITEMS = [
-  { theme: 'blue',  text: 'A prestigious Microsoft-backed hackathon designed to elevate your resume and build real-world credibility.' },
-  { theme: 'dark',  text: 'Get mentorship from industry leaders, senior engineers, and top-tier talent.' },
-  { theme: 'dark',  text: 'Compete for a massive ₹75,000 cash prize and prove your skills on a real-world stage.' },
+  { theme: 'blue', text: 'A prestigious Microsoft-backed hackathon designed to elevate your resume and build real-world credibility.' },
+  { theme: 'dark', text: 'Get mentorship from industry leaders, senior engineers, and top-tier talent.' },
+  { theme: 'dark', text: 'Compete for a massive ₹75,000 cash prize and prove your skills on a real-world stage.' },
   { theme: 'white', text: 'All Round 2 participants receive e-certificates, while finalists receive official physical certificates for their achievement and recognition.' },
   { theme: 'white', text: 'Gain hands-on experience solving impactful, real-world problem statements.' },
-  { theme: 'blue',  text: "Access exclusive developer tools and cloud credits from our partners, tailored to your project's scope, supporting development beyond the hackathon." }
+  { theme: 'blue', text: "Access exclusive developer tools and cloud credits from our partners, tailored to your project's scope, supporting development beyond the hackathon." }
 ]
 
 const PRIZES = [
@@ -98,8 +98,8 @@ const PRIZES = [
 
 const FAQS = [
   { q: 'Who can participate?', a: 'Any currently enrolled student. Teams of 2–4 members from any institution. Inter-college teams are allowed.' },
-  { 
-    q: 'How does the selection process work?', 
+  {
+    q: 'How does the selection process work?',
     a: (
       <div className="space-y-4 text-slate-600 leading-relaxed">
         <div>
@@ -115,7 +115,7 @@ const FAQS = [
           The finalists will present their solutions offline at Puducherry Technological University (PTU) before a panel of judges.
         </div>
       </div>
-    ) 
+    )
   },
   { q: 'What is the registration fee?', a: 'A registration fee of ₹500 is collected ONLY from teams shortlisted for the Online round. You must enter a valid and correct UTR ID to confirm your payment.' },
   { q: 'Can I change my problem statement after registering?', a: 'No. Your problem statement is locked upon registration.' },
@@ -268,9 +268,9 @@ function TopHeader() {
         <img src="/logos/header_logo.png" alt="Zephyr Hackathon 2026" style={{ height: '56px', objectFit: 'contain' }} />
       </div>
       <div className="site-header__date">
-        <span style={{ 
-          color: '#ffffff', 
-          fontWeight: 'bold', 
+        <span style={{
+          color: '#ffffff',
+          fontWeight: 'bold',
           fontSize: '18px',
           letterSpacing: '-0.01em'
         }}>
@@ -367,7 +367,7 @@ function HeroSection({ visible }) {
         transition={{ duration: 0.75, ease: [0.25, 0, 0, 1], delay: 0.1 }}
       >
         {/* Logos row — Microsoft first, then PTU */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 48 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 48, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
           <img
             src="/logos/MS_logo.png"
             alt="Microsoft"
@@ -379,6 +379,14 @@ function HeroSection({ visible }) {
             alt="PTU"
             style={{ height: 76, objectFit: 'contain' }}
           />
+          <span style={{ color: 'var(--color-muted)', fontSize: 32, lineHeight: 1 }}>×</span>
+          <a href="https://www.lebanyandepec.org/" target="_blank" rel="noopener noreferrer">
+            <img
+              src="/logos/lebanyan.jpg"
+              alt="Le Banyan de PEC"
+              style={{ height: 76, objectFit: 'contain', borderRadius: '8px' }}
+            />
+          </a>
         </div>
 
         {/* Big display heading */}
@@ -400,7 +408,14 @@ function HeroSection({ visible }) {
           Gain industry mentorship, expert feedback, developer resources, and opportunities to turn ideas into real-world impact.
         </p>
 
-        <div style={{ marginTop: 64 }}>
+        <p style={{
+          marginTop: 16, fontSize: 15, color: 'var(--color-muted)',
+          letterSpacing: '-0.02em', lineHeight: 1.6, maxWidth: 400,
+        }}>
+          Proudly sponsored by <a href="https://www.lebanyandepec.org/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-blue)', textDecoration: 'underline', fontWeight: 'bold' }}>Le Banyan de PEC</a>, the official PTU alumni association.
+        </p>
+
+        <div style={{ marginTop: 32 }}>
           <p style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--color-muted)', marginBottom: '12px' }}>
             * Minimum 2 members and Maximum 4 required to Participate
           </p>
@@ -496,7 +511,7 @@ function TimelineSection() {
             onSlotSelect={setSelectedSlot}
           />
         </div>
-        
+
         <div className="w-full md:w-1/2 flex flex-col justify-center min-h-[300px]">
           <AnimatePresence mode="wait">
             <motion.div
@@ -567,7 +582,7 @@ function WhySection() {
 ───────────────────────────────────────────────────────────────────────────── */
 
 function getIconForTrack(name) {
-  switch(name) {
+  switch (name) {
     case 'Urban Mobility': return <Map className="w-6 h-6" />
     case 'Smart Commerce': return <ShoppingCart className="w-6 h-6" />
     case 'Climate & Natural Resources': return <Leaf className="w-6 h-6" />
@@ -639,7 +654,7 @@ function PrizesSection() {
 
   return (
     <section id="prizes" className="section" style={{ background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
-      
+
       {/* Dot Grid Background */}
       <div style={{
         position: 'absolute',
@@ -658,7 +673,7 @@ function PrizesSection() {
 
       <div className="w-full max-w-xl mx-auto p-6 md:p-8 rounded-2xl bg-[#ffde00] shadow-xl relative z-10">
         <div className="flex w-full flex-col gap-6 md:gap-8">
-          
+
           <div className="flex flex-col items-center justify-center gap-2">
             <span className="text-xs font-bold text-[#0b1120]/70 uppercase tracking-widest">{getPrizeLabel(amount)}</span>
             <div className="flex items-start justify-center gap-1 md:gap-2">
@@ -804,7 +819,7 @@ function CountdownTimer() {
 
   useEffect(() => {
     const target = new Date("October 4, 2026 23:59:59").getTime();
-    
+
     const update = () => {
       const now = new Date().getTime();
       const diff = target - now;
@@ -817,7 +832,7 @@ function CountdownTimer() {
         });
       }
     };
-    
+
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
@@ -870,7 +885,7 @@ function ContactSection() {
           Get in <span className="text-highlight">Touch</span>
         </h2>
         <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start justify-center text-lg text-slate-800">
-          
+
           {/* Email */}
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 font-bold text-slate-900">
@@ -917,7 +932,7 @@ function useActiveSection() {
 
   useEffect(() => {
     const sectionIds = NAV_ITEMS.map(n => n.href.replace('#', ''))
-    
+
     let ticking = false
     const handleScroll = () => {
       if (!ticking) {
@@ -956,11 +971,11 @@ export default function Landing() {
     <>
       <LoadingOverlay onDone={() => setIntroComplete(true)} />
       <TopHeader />
-      <main style={{ 
-        paddingTop: 0, 
-        paddingBottom: 140, 
-        opacity: introComplete ? 1 : 0, 
-        transition: 'opacity 0.6s ease-out' 
+      <main style={{
+        paddingTop: 0,
+        paddingBottom: 140,
+        opacity: introComplete ? 1 : 0,
+        transition: 'opacity 0.6s ease-out'
       }}>
         <HeroSection visible={introComplete} />
         <TimelineSection />
@@ -968,7 +983,7 @@ export default function Landing() {
         <TracksSection />
         <PrizesSection />
         <RulesSection />
-        
+
         <section id="team" className="section section--light" style={{ padding: '100px 0', borderBottomColor: 'var(--color-hairline)', position: 'relative' }}>
           {/* Dot Grid Background */}
           <div style={{
