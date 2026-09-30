@@ -854,7 +854,7 @@
     font-size: 18px;
   }
   .display-lg {
-    font-size: clamp(28px, 8vw, 36px);
+    font-size: clamp(38px, 10vw, 48px);
   }
   .display-md {
     font-size: clamp(24px, 6vw, 32px);

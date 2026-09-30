@@ -367,24 +367,24 @@ function HeroSection({ visible }) {
         transition={{ duration: 0.75, ease: [0.25, 0, 0, 1], delay: 0.1 }}
       >
         {/* Logos row — Microsoft first, then PTU */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 48, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+        <div className="flex items-center gap-2 md:gap-8 mb-8 md:mb-12 flex-nowrap whitespace-nowrap overflow-hidden max-w-full">
           <img
             src="/logos/MS_logo.png"
             alt="Microsoft"
-            style={{ height: 80, objectFit: 'contain' }}
+            className="h-16 md:h-20 object-contain shrink-1"
           />
-          <span style={{ color: 'var(--color-muted)', fontSize: 32, lineHeight: 1 }}>×</span>
+          <span className="text-slate-400 text-2xl md:text-4xl leading-none shrink-0">×</span>
           <img
             src="/logos/ptulogo2-DP1QNExA.png"
             alt="PTU"
-            style={{ height: 76, objectFit: 'contain' }}
+            className="h-16 md:h-[76px] object-contain shrink-1"
           />
-          <span style={{ color: 'var(--color-muted)', fontSize: 32, lineHeight: 1 }}>×</span>
-          <a href="https://www.lebanyandepec.org/" target="_blank" rel="noopener noreferrer">
+          <span className="text-slate-400 text-2xl md:text-4xl leading-none shrink-0">×</span>
+          <a href="https://www.lebanyandepec.org/" target="_blank" rel="noopener noreferrer" className="shrink-1">
             <img
               src="/logos/lebanyan.jpg"
               alt="Le Banyan de PEC"
-              style={{ height: 76, objectFit: 'contain', borderRadius: '8px' }}
+              className="h-16 md:h-[76px] object-contain rounded-md md:rounded-lg"
             />
           </a>
         </div>
