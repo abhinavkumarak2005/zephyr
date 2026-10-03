@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Search, Box, Users, ShieldCheck, Trophy, CreditCard, Activity, FileText, UploadCloud, ChevronDown, ChevronUp, Copy, Check, XCircle, Send, Link as LinkIcon, LogOut, Mail, Phone, GraduationCap } from 'lucide-react';
+import { CheckCircle2, Search, Box, Users, ShieldCheck, Trophy, CreditCard, Activity, FileText, UploadCloud, ChevronDown, ChevronUp, Copy, Check, XCircle, Send, Link as LinkIcon, LogOut, Mail, Phone, GraduationCap, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { getUtrMismatchEmailTemplate } from '../utils/emailTemplates';
+
+import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export default function AdminDashboard() {
   const [teams, setTeams] = useState([]);
@@ -36,6 +41,7 @@ export default function AdminDashboard() {
   
   // Selected teams for Publish
   const [selectedToPublish, setSelectedToPublish] = useState([]);
+  const [evalSubTab, setEvalSubTab] = useState('r1');
 
   // Notice State
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
@@ -48,6 +54,9 @@ export default function AdminDashboard() {
   
   const [conditionalTeam, setConditionalTeam] = useState(null);
   const [conditionalReason, setConditionalReason] = useState('');
+  
+  const [selectedR1Teams, setSelectedR1Teams] = useState(new Set());
+  const [bulkJudgeSelection, setBulkJudgeSelection] = useState('');
 
   // R3 Check-in
   const [qrCodeInput, setQrCodeInput] = useState('');
@@ -77,7 +86,7 @@ export default function AdminDashboard() {
     setLoading(true);
     const { data: teamData, error: teamErr } = await supabase
       .from('teams')
-      .select('*, problem_statements(title), team_members(*)')
+      .select('*, problem_statements(title, description, domain), team_members(*)')
       .order('created_at', { ascending: false });
       
     const { data: evalData, error: evalErr } = await supabase
@@ -134,6 +143,219 @@ export default function AdminDashboard() {
     await supabase.from('teams').update({ conditional_selection_reason: conditionalReason }).eq('id', conditionalTeam.id);
     setConditionalTeam(null);
     setConditionalReason('');
+    fetchTeams();
+  };
+
+  const generateTeamPDF = async (team, returnBlob = false) => {
+    const doc = new jsPDF();
+    
+    // Add logos
+    try {
+      const getBase64 = async (url) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 300; // Cap resolution for PDF to save space
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff'; // White bg for transparent PNGs
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress as 70% JPEG
+          };
+          img.onerror = reject;
+          img.src = url;
+        });
+      };
+      const logoData1 = await getBase64('/logos/ptulogo2-DP1QNExA.png');
+      const logoData2 = await getBase64('/logos/lebanyan.jpg');
+      doc.addImage(logoData1, 'JPEG', 15, 10, 26, 26); // Left (PTU Logo) - Square, 15 from left
+      doc.addImage(logoData2, 'JPEG', 159, 12, 36, 26); // Right (Le Banyan) - Landscape, 15 from right
+    } catch(err) {
+      console.warn("Could not load logos for PDF", err);
+    }
+
+    // Headers
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Puducherry Technological University", 105, 18, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("Department of Computer Science Engineering", 105, 24, { align: "center" });
+    doc.text("Microsoft AI Innovators Hub", 105, 30, { align: "center" });
+    doc.text("Le Banyan de PEC", 105, 36, { align: "center" });
+    
+    // Table (Border Box)
+    doc.setLineWidth(0.3);
+    doc.rect(15, 45, 180, 24); // 3 rows, 8 height each
+    doc.line(15, 53, 195, 53);
+    doc.line(15, 61, 195, 61);
+    doc.line(140, 45, 140, 61); // Vertical split for first two rows
+    
+    doc.setFontSize(10);
+    
+    const printField = (label, value, x, y) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(label, x, y);
+      const w = doc.getTextWidth(label + " ");
+      doc.setFont("helvetica", "normal");
+      doc.text(value, x + w, y);
+    };
+
+    const leader = team.team_members?.find(m => m.is_leader)?.name || 'N/A';
+    printField("Team Leader's Name :", leader, 17, 51);
+    printField("Team ID :", team.team_id, 142, 51);
+    
+    const domain = team.problem_statements?.domain || 'N/A';
+    printField("Problem Domain :", domain, 17, 59);
+    printField("Current Round :", `Round ${team.current_round || 1}`, 142, 59);
+    
+    printField("Team Name :", team.team_name, 17, 67);
+    
+    // Title Idea Description
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Idea Description", 105, 80, { align: "center" });
+    
+    // Content
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    let ideaDesc = team.idea_description || team.problem_statements?.description || 'No idea description provided.';
+    
+    // Sanitize non-breaking spaces and carriage returns
+    ideaDesc = ideaDesc.replace(/\u00A0/g, ' ').replace(/\r/g, '');
+    
+    // Convert smart quotes/dashes/arrows to ASCII
+    ideaDesc = ideaDesc
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[\u2190-\u2193\u2794\u27F6]/g, '->');
+      
+    // Aggressively strip any remaining non-ASCII characters that break jsPDF Helvetica rendering
+    ideaDesc = ideaDesc.replace(/[^\x00-\x7F\n]/g, "");
+    
+    // Split by newlines to preserve user formatting
+    const paragraphs = ideaDesc.split('\n');
+    let currentY = 90;
+    
+    paragraphs.forEach(para => {
+      if (para.trim() === '') {
+        currentY += 4;
+        if (currentY > 280) { doc.addPage(); currentY = 20; }
+        return;
+      }
+      
+      const cleanPara = para.replace(/\t/g, '    ');
+      // Reduce width from 180 to 170 to ensure it safely fits within the 195mm right margin
+      const lines = doc.splitTextToSize(cleanPara, 170);
+      
+      lines.forEach(line => {
+        if (currentY > 280) {
+          doc.addPage();
+          currentY = 20;
+        }
+        doc.text(line, 15, currentY);
+        currentY += 5;
+      });
+      
+      currentY += 2; // Extra gap after paragraph
+    });
+    
+    currentY += 10;
+    
+    // QR Code
+    if (team.presentation_link) {
+      if (currentY + 60 > 280) {
+        doc.addPage();
+        currentY = 20;
+      }
+      try {
+        const qrDataUrl = await QRCode.toDataURL(team.presentation_link, { margin: 1 });
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Presentation Link", 105, currentY - 2, { align: "center" });
+        doc.addImage(qrDataUrl, 'PNG', 80, currentY, 50, 50);
+      } catch (err) {
+        console.error("Error generating QR", err);
+      }
+    }
+    
+    if (returnBlob) {
+      return doc.output('blob');
+    }
+    
+    doc.save(`${team.team_id}.pdf`);
+  };
+
+  const handleDownloadAllPDFs = async () => {
+    try {
+      setLoading(true);
+      const zip = new JSZip();
+      
+      const teamsToDownload = getRosterTeams();
+      if (teamsToDownload.length === 0) {
+        alert("No teams to download in the current view.");
+        setLoading(false);
+        return;
+      }
+
+      for (const team of teamsToDownload) {
+        try {
+          const blob = await generateTeamPDF(team, true);
+          zip.file(`${team.team_id}_${team.team_name.replace(/[^a-z0-9]/gi, '_')}.pdf`, blob);
+        } catch (err) {
+          console.warn(`Failed to generate PDF for ${team.team_id}`, err);
+        }
+      }
+      
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "teams_pdfs.zip");
+    } catch(err) {
+      console.error(err);
+      alert("Error generating zip");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignJudge = async (teamId, judgeId) => {
+    await supabase.from('judge_assignments').delete().eq('team_id', teamId);
+    if (judgeId) {
+      await supabase.from('judge_assignments').insert([{ team_id: teamId, judge_id: judgeId }]);
+    }
+    fetchTeams();
+  };
+
+  const handleBulkAssignJudges = async () => {
+    if (!bulkJudgeSelection || selectedR1Teams.size === 0) return;
+    
+    // Remove existing assignments for selected teams
+    const teamIds = Array.from(selectedR1Teams);
+    await supabase.from('judge_assignments').delete().in('team_id', teamIds);
+    
+    // Insert new assignments
+    const inserts = teamIds.map(teamId => ({ team_id: teamId, judge_id: bulkJudgeSelection }));
+    await supabase.from('judge_assignments').insert(inserts);
+    
+    // Clear selection
+    setSelectedR1Teams(new Set());
+    setBulkJudgeSelection('');
     fetchTeams();
   };
 
@@ -402,15 +624,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAssignJudge = async (teamId, judgeId) => {
-    if (!judgeId || judgeId === '-') {
-      await supabase.from('judge_assignments').delete().eq('team_id', teamId);
-    } else {
-      await supabase.from('judge_assignments').delete().eq('team_id', teamId);
-      await supabase.from('judge_assignments').insert([{ team_id: teamId, judge_id: judgeId }]);
-    }
+  const handleToggleEvaluation = async (id, currentStatus) => {
+    await supabase.from('judges').update({ evaluation_enabled: !currentStatus }).eq('id', id);
     fetchTeams();
   };
+
+
 
   return (
     <div className="flex min-h-screen w-full bg-[#f5f5f7] text-[#1d1d1f] font-sans selection:bg-blue-200">
@@ -457,6 +676,10 @@ export default function AdminDashboard() {
           
           <button onClick={() => setActiveTab('judges')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'judges' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
             <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span className="font-medium text-sm">Judges</span></div>
+          </button>
+
+          <button onClick={() => setActiveTab('eval_results')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'eval_results' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
+            <div className="flex items-center gap-3"><Activity className="w-4 h-4" /><span className="font-medium text-sm">Evaluation Results</span></div>
           </button>
           
           <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
@@ -641,11 +864,50 @@ export default function AdminDashboard() {
                     <p className="text-[#86868b]">Review PPT presentations and qualify teams to Round 2.</p>
                   </div>
                   
-                  <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                   <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                    <div className="p-4 border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="text-sm font-medium text-slate-700">
+                        {selectedR1Teams.size} teams selected
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <select 
+                          className="text-sm border rounded-full px-4 py-1.5 bg-white border-[#d2d2d7]"
+                          value={bulkJudgeSelection}
+                          onChange={(e) => setBulkJudgeSelection(e.target.value)}
+                        >
+                          <option value="">Select Judge</option>
+                          {judges.map(j => (
+                            <option key={j.id} value={j.id}>{j.name}</option>
+                          ))}
+                        </select>
+                        <Button 
+                          size="sm" 
+                          onClick={handleBulkAssignJudges} 
+                          disabled={!bulkJudgeSelection || selectedR1Teams.size === 0}
+                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-sm text-xs px-6"
+                        >
+                          Bulk Assign
+                        </Button>
+                      </div>
+                    </div>
                     <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                          <th className="py-3 px-4 w-12 text-center">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              checked={r1Teams.length > 0 && selectedR1Teams.size === r1Teams.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedR1Teams(new Set(r1Teams.map(t => t.id)));
+                                } else {
+                                  setSelectedR1Teams(new Set());
+                                }
+                              }}
+                            />
+                          </th>
                           <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
                           <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
                           <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Submission</th>
@@ -655,6 +917,19 @@ export default function AdminDashboard() {
                       <tbody className="divide-y divide-[#d2d2d7]/50">
                         {r1Teams.map(team => (
                           <tr key={team.id} className="hover:bg-[#f5f5f7]/50 transition-colors group">
+                            <td className="py-4 px-4 text-center">
+                              <input 
+                                type="checkbox" 
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                checked={selectedR1Teams.has(team.id)}
+                                onChange={(e) => {
+                                  const newSet = new Set(selectedR1Teams);
+                                  if (e.target.checked) newSet.add(team.id);
+                                  else newSet.delete(team.id);
+                                  setSelectedR1Teams(newSet);
+                                }}
+                              />
+                            </td>
                             <td className="py-4 px-4">
                               <div className="font-semibold text-sm text-[#1d1d1f]">{team.team_name}</div>
                               <div className="text-xs text-[#86868b] font-mono mt-0.5">{team.team_id} • {team.team_members?.length || 0} Members</div>
@@ -671,7 +946,17 @@ export default function AdminDashboard() {
                                 <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2.5 py-1 rounded-full">Awaiting Link</span>
                               )}
                             </td>
-                            <td className="py-4 px-4 text-right space-x-2">
+                            <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                              <select 
+                                onChange={(e) => handleAssignJudge(team.id, e.target.value)}
+                                className="text-xs border rounded-md px-2 py-1.5 mr-2 bg-white"
+                                value={judgeAssignments.find(a => a.team_id === team.id)?.judge_id || ''}
+                              >
+                                <option value="">Assign Judge</option>
+                                {judges.map(j => (
+                                  <option key={j.id} value={j.id}>{j.name}</option>
+                                ))}
+                              </select>
                               <Button size="sm" onClick={() => handlePromoteToRound2(team.id)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-sm text-xs px-4">
                                 Promote
                               </Button>
@@ -685,7 +970,7 @@ export default function AdminDashboard() {
                           </tr>
                         ))}
                         {r1Teams.length === 0 && (
-                          <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No teams in Round 1 currently.</td></tr>
+                          <tr><td colSpan="5" className="text-center py-12 text-[#86868b]">No teams in Round 1 currently.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1058,7 +1343,8 @@ export default function AdminDashboard() {
                       <p className="text-[#86868b]">View complete team details and export contact information.</p>
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-x-auto shrink-0 pb-2 md:pb-0">
+                      <Button onClick={handleDownloadAllPDFs} className="gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm whitespace-nowrap"><Download className="w-4 h-4"/> Download All PDFs</Button>
                       <Button onClick={copyAllLeadersEmails} variant="outline" size="sm" className="gap-2 bg-white"><Copy className="w-4 h-4"/> Copy Leader Emails</Button>
                       <Button onClick={copyAllMembersEmails} variant="outline" size="sm" className="gap-2 bg-white"><Copy className="w-4 h-4"/> Copy All Emails</Button>
                       <Button onClick={copyAllMembersPhones} variant="outline" size="sm" className="gap-2 bg-white"><Copy className="w-4 h-4"/> Copy All Phones</Button>
@@ -1109,6 +1395,7 @@ export default function AdminDashboard() {
                                   <div className="flex justify-between items-center mb-4">
                                     <h4 className="font-bold text-slate-900">Team Members ({team.team_members?.length})</h4>
                                     <div className="flex gap-2">
+                                      <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => generateTeamPDF(team)}><Download className="w-3 h-3 mr-1"/> PDF</Button>
                                       <Button size="sm" variant="outline" className="h-7 text-xs bg-white" onClick={() => handleCopy(team.team_members.map(m=>m.email).join(', '))}>Copy Emails</Button>
                                       <Button size="sm" variant="outline" className="h-7 text-xs bg-white" onClick={() => handleCopy(team.team_members.map(m=>m.phone).filter(p=>p).join(', '))}>Copy Phones</Button>
                                     </div>
@@ -1279,9 +1566,19 @@ export default function AdminDashboard() {
                                   <div className="text-slate-500 font-mono text-xs mt-1">pwd: {judge.password}</div>
                                 </td>
                                 <td className="py-4 px-6 text-right">
-                                  <Button size="sm" variant="outline" onClick={() => handleDeleteJudge(judge.id)} className="text-red-600 border-red-200 hover:bg-red-50">
-                                    Delete
-                                  </Button>
+                                  <div className="flex justify-end gap-2 items-center">
+                                    <label className="flex items-center cursor-pointer">
+                                      <div className="relative">
+                                        <input type="checkbox" className="sr-only" checked={judge.evaluation_enabled || false} onChange={() => handleToggleEvaluation(judge.id, judge.evaluation_enabled)} />
+                                        <div className={`block w-10 h-6 rounded-full transition-colors ${judge.evaluation_enabled ? 'bg-blue-600' : 'bg-slate-300'}`}></div>
+                                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${judge.evaluation_enabled ? 'transform translate-x-4' : ''}`}></div>
+                                      </div>
+                                      <span className="ml-2 text-xs font-semibold text-slate-600">Eval</span>
+                                    </label>
+                                    <Button size="sm" variant="outline" onClick={() => handleDeleteJudge(judge.id)} className="text-red-600 border-red-200 hover:bg-red-50 ml-4">
+                                      Delete
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -1292,6 +1589,77 @@ export default function AdminDashboard() {
                         </table>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* EVALUATION RESULTS TAB */}
+              {activeTab === 'eval_results' && (
+                <motion.div key="eval_results" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Evaluation Results</h1>
+                      <p className="text-[#86868b]">View independent evaluation scores from judges (Read-Only).</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mb-6 p-1 bg-[#e8e8ed]/50 rounded-xl w-fit">
+                    <button onClick={() => setEvalSubTab('r1')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r1' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 1 Evaluations</button>
+                    <button onClick={() => setEvalSubTab('r2')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r2' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 2 Evaluations</button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                    <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                          <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Judge</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Scores</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Verdict</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#d2d2d7]/50">
+                        {evaluations.filter(e => e.round_number === (evalSubTab === 'r1' ? 1 : 2)).map(ev => {
+                          const team = teams.find(t => t.id === ev.team_id);
+                          const judge = judges.find(j => j.id === ev.judge_id);
+                          return (
+                            <tr key={ev.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                              <td className="py-4 px-4">
+                                <div className="font-semibold text-sm text-[#1d1d1f]">{team?.team_name || 'Unknown'}</div>
+                                <div className="text-xs text-[#86868b] font-mono mt-0.5">{team?.team_id}</div>
+                              </td>
+                              <td className="py-4 px-4 font-medium text-sm text-[#1d1d1f]">
+                                {judge?.name || 'Unknown Judge'}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-[#1d1d1f]">
+                                {evalSubTab === 'r1' ? (
+                                  <div className="flex gap-3 text-xs flex-wrap">
+                                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">Inn: {ev.innovation || '-'}</span>
+                                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded">Tech: {ev.tech_impl || '-'}</span>
+                                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded">Imp: {ev.impact || '-'}</span>
+                                    <span className="bg-pink-50 text-pink-700 px-2 py-1 rounded">Bus: {ev.business || '-'}</span>
+                                    <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded">Pre: {ev.presentation || '-'}</span>
+                                    <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded font-bold">Tot: {ev.total_score || '-'}</span>
+                                  </div>
+                                ) : (
+                                  <div className="font-bold">Total: {ev.total_score || '-'}</div>
+                                )}
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                {ev.selected_status === true && <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold uppercase">Selected</span>}
+                                {ev.selected_status === false && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold uppercase">Not Selected</span>}
+                                {ev.selected_status === null && <span className="text-slate-400 text-xs italic">Pending</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {evaluations.filter(e => e.round_number === (evalSubTab === 'r1' ? 1 : 2)).length === 0 && (
+                          <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No evaluations recorded for this round yet.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
                     </div>
                   </div>
                 </motion.div>

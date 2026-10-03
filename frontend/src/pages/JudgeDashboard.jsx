@@ -11,13 +11,21 @@ export default function JudgeDashboard() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [judgeName, setJudgeName] = useState('');
-  
-  // Grading Modal State
-  const [isGrading, setIsGrading] = useState(null); // team object
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [gradeData, setGradeData] = useState({
-    ps_fit: 5, ai_depth: 5, tech_impl: 5, innovation: 5, impact: 5, business: 5, presentation: 5, absent: false
+  const [judgeInfo, setJudgeInfo] = useState(null);
+  const [activeTab, setActiveTab] = useState('assigned');
+  const [evalForm, setEvalForm] = useState({
+    team_id: '',
+    innovation: 3,
+    tech_impl: 3,
+    impact: 3,
+    business: 3,
+    presentation: 3,
+    selected_status: false
   });
+  const [submitLoading, setSubmitLoading] = useState(false);
+  
+  // Expanded rows state
+  const [expandedTeams, setExpandedTeams] = useState(new Set());
   
   const navigate = useNavigate();
 
@@ -37,13 +45,16 @@ export default function JudgeDashboard() {
       setLoading(true);
       const judgeId = localStorage.getItem('judgeId');
       
+      const { data: judgeData } = await supabase.from('judges').select('*').eq('id', judgeId).single();
+      setJudgeInfo(judgeData);
+
       const { data, error } = await supabase
         .from('judge_assignments')
         .select(`
           team_id,
           teams:team_id (
-            id, team_name, presentation_link,
-            problem_statements (domain, title, id),
+            id, team_id, team_name, presentation_link, idea_description,
+            problem_statements (domain, title, id, description),
             evaluations (*)
           )
         `)
@@ -76,63 +87,55 @@ export default function JudgeDashboard() {
     navigate('/judge-login');
   };
 
-  const handleSaveEvaluation = async (e) => {
-    e.preventDefault();
-    if (!isGrading) return;
-    setSaveLoading(true);
-
-    try {
-      const judgeId = localStorage.getItem('judgeId');
-      const total = gradeData.absent ? 0 : (
-        gradeData.ps_fit + gradeData.ai_depth + gradeData.tech_impl +
-        gradeData.innovation + gradeData.impact + gradeData.business + gradeData.presentation
-      );
-
-      let grade = '-';
-      if (!gradeData.absent) {
-        if (total >= 60) grade = 'S';
-        else if (total >= 50) grade = 'A';
-        else if (total >= 40) grade = 'B';
-        else if (total >= 30) grade = 'C';
-        else grade = 'D';
-      }
-
-      const payload = {
-        team_id: isGrading.id,
-        round_number: 2,
-        grade: gradeData.absent ? null : grade,
-        total_score: total,
-        is_absent: gradeData.absent,
-        ps_fit: gradeData.ps_fit,
-        ai_depth: gradeData.ai_depth,
-        tech_impl: gradeData.tech_impl,
-        innovation: gradeData.innovation,
-        impact: gradeData.impact,
-        business: gradeData.business,
-        presentation: gradeData.presentation,
-        judge_id: judgeId,
-        updated_at: new Date().toISOString()
-      };
-
-      if (isGrading.evalData) {
-        // Update
-        const { error } = await supabase.from('evaluations').update(payload).eq('id', isGrading.evalData.id);
-        if (error) throw error;
-      } else {
-        // Insert
-        payload.evaluated_at = new Date().toISOString();
-        const { error } = await supabase.from('evaluations').insert([payload]);
-        if (error) throw error;
-      }
-
-      await fetchAssignedTeams();
-      setIsGrading(null);
-    } catch (err) {
-      console.error("Error saving evaluation:", err);
-      alert(err.message || "Failed to save evaluation");
-    } finally {
-      setSaveLoading(false);
+  const toggleExpand = (teamId) => {
+    const newExpanded = new Set(expandedTeams);
+    if (newExpanded.has(teamId)) {
+      newExpanded.delete(teamId);
+    } else {
+      newExpanded.add(teamId);
     }
+    setExpandedTeams(newExpanded);
+  };
+
+  const handleEvalSubmit = async (e) => {
+    e.preventDefault();
+    if (!evalForm.team_id) return alert('Select a team to evaluate');
+    
+    setSubmitLoading(true);
+    const judgeId = localStorage.getItem('judgeId');
+    
+    const payload = {
+      team_id: evalForm.team_id,
+      judge_id: judgeId,
+      round_number: 1, // Store as round 1 evaluation
+      innovation: evalForm.innovation,
+      tech_impl: evalForm.tech_impl,
+      impact: evalForm.impact,
+      business: evalForm.business,
+      presentation: evalForm.presentation,
+      total_score: parseInt(evalForm.innovation) + parseInt(evalForm.tech_impl) + parseInt(evalForm.impact) + parseInt(evalForm.business) + parseInt(evalForm.presentation),
+      selected_status: evalForm.selected_status
+    };
+
+    // Check if evaluation already exists for this judge, team, and round
+    const { data: existing } = await supabase
+      .from('evaluations')
+      .select('id')
+      .eq('team_id', evalForm.team_id)
+      .eq('judge_id', judgeId)
+      .eq('round_number', 1)
+      .single();
+
+    if (existing) {
+      await supabase.from('evaluations').update(payload).eq('id', existing.id);
+    } else {
+      await supabase.from('evaluations').insert([payload]);
+    }
+    
+    setSubmitLoading(false);
+    alert('Evaluation saved successfully!');
+    // Reset form
+    setEvalForm({ ...evalForm, team_id: '' });
   };
 
   if (loading) {
@@ -157,9 +160,21 @@ export default function JudgeDashboard() {
         
         <div className="px-4 py-4 space-y-1">
           <p className="px-2 text-xs font-semibold text-[#86868b] uppercase tracking-widest mb-2">Evaluations</p>
-          <button className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all bg-blue-600 text-white shadow-sm`}>
+          <button 
+            onClick={() => setActiveTab('assigned')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'assigned' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}
+          >
             <div className="flex items-center gap-3"><span className="font-medium text-sm">Assigned Teams</span></div>
           </button>
+          
+          {judgeInfo?.evaluation_enabled && (
+            <button 
+              onClick={() => setActiveTab('eval')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'eval' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}
+            >
+              <div className="flex items-center gap-3"><span className="font-medium text-sm">Evaluation</span></div>
+            </button>
+          )}
         </div>
 
         <div className="flex-1" />
@@ -195,170 +210,163 @@ export default function JudgeDashboard() {
             </div>
 
             <div className="flex md:hidden w-full overflow-x-auto pb-2 -mx-4 px-4 gap-2 snap-x" style={{ scrollbarWidth: 'none' }}>
-              <button className={`shrink-0 snap-start px-4 py-1.5 rounded-full text-sm font-semibold transition-colors bg-blue-600 text-white shadow-sm`}>
+              <button onClick={() => setActiveTab('assigned')} className={`shrink-0 snap-start px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${activeTab === 'assigned' ? 'bg-blue-600 text-white shadow-sm' : 'bg-[#e8e8ed] text-[#86868b]'}`}>
                 Assigned Teams
               </button>
+              {judgeInfo?.evaluation_enabled && (
+                <button onClick={() => setActiveTab('eval')} className={`shrink-0 snap-start px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${activeTab === 'eval' ? 'bg-blue-600 text-white shadow-sm' : 'bg-[#e8e8ed] text-[#86868b]'}`}>
+                  Evaluation
+                </button>
+              )}
             </div>
           </div>
         </header>
 
         <main className="flex-1 p-4 md:p-8 max-w-[1400px] w-full mx-auto">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <div className="mb-6">
-              <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Round 2 Evaluations</h1>
-              <p className="text-[#86868b]">Review presentations and evaluate your assigned teams.</p>
-            </div>
+          {activeTab === 'assigned' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="mb-6">
+                <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Assigned Teams</h1>
+                <p className="text-[#86868b]">Review details and idea descriptions of your assigned teams.</p>
+              </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
-              <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
-                      <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
-                      <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
-                      <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Presentation</th>
-                      <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Score</th>
-                      <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#d2d2d7]/50">
-                    {teams.map((team) => (
-                      <tr key={team.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
-                            {team.team_name}
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-sm max-w-[300px] truncate">
-                          <span className="font-semibold">PS-{team.problem_statements?.id}:</span> {team.problem_statements?.title}
-                          <div className="text-xs text-[#86868b] mt-0.5">{team.problem_statements?.domain}</div>
-                        </td>
-                        <td className="py-4 px-4">
-                          {team.presentation_link ? (
-                            <a href={team.presentation_link} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-semibold group">
-                              View PPT
-                              <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
-                            </a>
-                          ) : (
-                            <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded text-xs font-semibold">Not submitted</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4 text-sm font-medium">
-                          {team.evalData ? (
-                            team.evalData.is_absent ? (
-                              <span className="text-red-500 bg-red-50 px-2 py-1 rounded text-xs font-semibold">Absent</span>
-                            ) : (
-                              <span className="text-blue-600 font-bold">{team.evalData.total_score} / 70</span>
-                            )
-                          ) : (
-                            <span className="text-slate-400">Not Graded</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <Button size="sm" onClick={() => {
-                            setIsGrading(team);
-                            setGradeData({
-                              ps_fit: team.evalData?.ps_fit || 5,
-                              ai_depth: team.evalData?.ai_depth || 5,
-                              tech_impl: team.evalData?.tech_impl || 5,
-                              innovation: team.evalData?.innovation || 5,
-                              impact: team.evalData?.impact || 5,
-                              business: team.evalData?.business || 5,
-                              presentation: team.evalData?.presentation || 5,
-                              absent: team.evalData?.is_absent || false
-                            });
-                          }} className="bg-slate-800 hover:bg-slate-900 text-white rounded-full shadow-sm text-xs px-4">
-                            {team.evalData ? 'Edit Grade' : 'Grade Team'}
-                          </Button>
-                        </td>
+              <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                        <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
+                        <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Presentation</th>
+                        <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Details</th>
                       </tr>
-                    ))}
-                    {teams.length === 0 && (
-                      <tr><td colSpan="5" className="text-center py-12 text-[#86868b]">No teams assigned to you yet.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        </main>
-      </div>
-
-      {/* Grading Modal */}
-      {isGrading && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-              <div>
-                <h3 className="font-bold text-xl text-slate-900">Evaluate Team</h3>
-                <p className="text-sm text-slate-500 font-medium">{isGrading.team_name}</p>
-              </div>
-              <button type="button" onClick={() => setIsGrading(null)} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1 transition-colors"><XCircle className="w-6 h-6"/></button>
-            </div>
-            <form onSubmit={handleSaveEvaluation} className="block">
-              <div className="p-6 max-h-[70vh] overflow-y-auto">
-                
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 mb-6 transition-colors hover:bg-slate-100 cursor-pointer" onClick={() => setGradeData({...gradeData, absent: !gradeData.absent})}>
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900">Mark Absent</h4>
-                    <p className="text-xs text-slate-500">Team did not attend the live presentation.</p>
-                  </div>
-                  <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={gradeData.absent} onChange={e => setGradeData({...gradeData, absent: e.target.checked})} onClick={e => e.stopPropagation()} />
+                    </thead>
+                    <tbody className="divide-y divide-[#d2d2d7]/50">
+                      {teams.map((team) => (
+                        <React.Fragment key={team.id}>
+                          <tr className="hover:bg-[#f5f5f7]/50 transition-colors">
+                            <td className="py-4 px-4">
+                              <div className="font-semibold text-sm text-[#1d1d1f]">
+                                {team.team_name}
+                              </div>
+                              <div className="text-xs text-[#86868b] mt-0.5 font-mono">
+                                {team.team_id}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              {team.presentation_link ? (
+                                <a href={team.presentation_link} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-semibold group">
+                                  View PPT
+                                  <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+                                </a>
+                              ) : (
+                                <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded text-xs font-semibold">Not submitted</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <Button size="sm" onClick={() => toggleExpand(team.id)} variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-full shadow-sm text-xs px-4">
+                                {expandedTeams.has(team.id) ? 'Hide Idea' : 'View Idea'}
+                              </Button>
+                            </td>
+                          </tr>
+                          {expandedTeams.has(team.id) && (
+                            <tr className="bg-[#f5f5f7]/30">
+                              <td colSpan="3" className="px-4 py-6">
+                                <div className="bg-white p-4 rounded-xl border border-[#d2d2d7]/50 shadow-sm">
+                                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-2">Idea Description</h4>
+                                  <p className="text-sm text-[#1d1d1f]/80 whitespace-pre-wrap leading-relaxed">
+                                    {team.idea_description || team.problem_statements?.description || 'No idea description provided.'}
+                                  </p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                      {teams.length === 0 && (
+                        <tr><td colSpan="3" className="text-center py-12 text-[#86868b]">No teams assigned to you yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
+              </div>
+            </motion.div>
+          )}
 
-                {!gradeData.absent && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
+          {activeTab === 'eval' && judgeInfo?.evaluation_enabled && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="mb-6">
+                <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Evaluation Form</h1>
+                <p className="text-[#86868b]">Score your assigned teams based on the 5 key criteria (1-5).</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50 max-w-2xl">
+                <form onSubmit={handleEvalSubmit} className="space-y-6">
+                  <div>
+                    <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-2 block">Select Team</label>
+                    <select 
+                      className="w-full border rounded-xl px-4 py-3 bg-[#f5f5f7] border-[#d2d2d7] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={evalForm.team_id}
+                      onChange={e => setEvalForm({...evalForm, team_id: e.target.value})}
+                      required
+                    >
+                      <option value="">-- Choose a team to evaluate --</option>
+                      {teams.map(t => (
+                        <option key={t.id} value={t.id}>{t.team_name} ({t.team_id})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {evalForm.team_id && (
+                    <div className="space-y-6 pt-4 border-t border-[#d2d2d7]/50">
                       {[
-                        { key: 'ps_fit', label: 'Problem-Solution Fit' },
-                        { key: 'ai_depth', label: 'AI Integration Depth' },
+                        { key: 'innovation', label: 'Innovation & Originality' },
                         { key: 'tech_impl', label: 'Technical Implementation' },
-                        { key: 'innovation', label: 'Innovation & Creativity' },
-                        { key: 'impact', label: 'Impact & Scalability' },
-                        { key: 'business', label: 'Business Viability' },
-                        { key: 'presentation', label: 'Presentation & Pitch' }
-                      ].map((category) => (
-                        <div key={category.key} className="space-y-1">
-                          <div className="flex justify-between items-center mb-2">
-                            <label className="text-sm font-bold text-slate-700">{category.label}</label>
-                            <span className="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 shadow-sm">{gradeData[category.key]} <span className="text-blue-400 font-normal text-xs">/ 10</span></span>
-                          </div>
-                          <input 
-                            type="range" 
-                            min="1" 
-                            max="10" 
-                            step="1"
-                            value={gradeData[category.key]}
-                            onChange={e => setGradeData({...gradeData, [category.key]: parseInt(e.target.value)})}
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                          />
-                          <div className="flex justify-between text-[10px] text-slate-400 font-mono px-1 mt-1">
-                            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                        { key: 'impact', label: 'Impact & Relevance' },
+                        { key: 'business', label: 'Feasibility & Business Model' },
+                        { key: 'presentation', label: 'Presentation & Demo' }
+                      ].map(criteria => (
+                        <div key={criteria.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <label className="text-sm font-semibold text-[#1d1d1f]">{criteria.label}</label>
+                          <div className="flex gap-2">
+                            {[1,2,3,4,5].map(score => (
+                              <button
+                                type="button"
+                                key={score}
+                                onClick={() => setEvalForm({...evalForm, [criteria.key]: score})}
+                                className={`w-10 h-10 rounded-full font-bold transition-all flex items-center justify-center ${evalForm[criteria.key] === score ? 'bg-blue-600 text-white shadow-md' : 'bg-[#f5f5f7] text-[#86868b] hover:bg-[#e8e8ed]'}`}
+                              >
+                                {score}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       ))}
+
+                      <div className="pt-4 border-t border-[#d2d2d7]/50">
+                        <label className="text-sm font-semibold text-[#1d1d1f] mb-3 block">Final Verdict</label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="selected_status" checked={evalForm.selected_status === true} onChange={() => setEvalForm({...evalForm, selected_status: true})} className="w-5 h-5 text-blue-600 focus:ring-blue-500" />
+                            <span className="font-medium text-green-700">Selected</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="selected_status" checked={evalForm.selected_status === false} onChange={() => setEvalForm({...evalForm, selected_status: false})} className="w-5 h-5 text-red-600 focus:ring-red-500" />
+                            <span className="font-medium text-red-700">Not Selected</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <Button type="submit" disabled={submitLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-6 text-lg shadow-sm">
+                        {submitLoading ? 'Saving...' : 'Submit Evaluation'}
+                      </Button>
                     </div>
-                    
-                    <div className="mt-8 p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex justify-between items-center">
-                      <span className="font-bold text-slate-700">Total Score Calculation</span>
-                      <span className="text-2xl font-black text-blue-700">
-                        {gradeData.ps_fit + gradeData.ai_depth + gradeData.tech_impl + gradeData.innovation + gradeData.impact + gradeData.business + gradeData.presentation} 
-                        <span className="text-sm text-blue-400 font-bold"> / 70</span>
-                      </span>
-                    </div>
-                  </>
-                )}
+                  )}
+                </form>
               </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-                <Button type="button" variant="outline" onClick={() => setIsGrading(null)} className="rounded-full px-6">Cancel</Button>
-                <Button type="submit" disabled={saveLoading} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 shadow-sm">
-                  {saveLoading ? 'Saving...' : 'Save Evaluation'}
-                </Button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
+            </motion.div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
