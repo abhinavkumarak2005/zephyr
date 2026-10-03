@@ -223,7 +223,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
 
                   <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <Button asChild variant="outline" className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50">
-                      <a href="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/Zephyr%20PPT%20Template.pptx" download target="_blank" rel="noreferrer">
+                      <a href="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/Zephyr%20PPT%20Template(New).pptx" download target="_blank" rel="noreferrer">
                         <Download className="w-4 h-4" />
                         Download Zephyr Template
                       </a>
