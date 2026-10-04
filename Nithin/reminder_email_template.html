@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZÉPHYR 2026 - PPT Submission Reminder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .email-wrapper {
+      width: 100%;
+      background-color: #f8fafc;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+
+    .email-content {
+      max-width: 650px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .hero-section {
+      width: 100%;
+      background-color: #ffffff;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .robot-image {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .body-section {
+      padding: 40px;
+      text-align: left;
+      line-height: 1.6;
+      font-size: 16px;
+      color: #334155;
+    }
+
+    .body-section p {
+      margin: 0 0 16px 0;
+    }
+
+    .warning-box {
+      background-color: #fef2f2;
+      border-left: 4px solid #ef4444;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .warning-box p {
+      color: #991b1b;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .instructions-box {
+      background-color: #f1f5f9;
+      border-left: 4px solid #3898ec;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .instructions-box ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .instructions-box li {
+      margin-bottom: 12px;
+    }
+
+    .instructions-box li:last-child {
+      margin-bottom: 0;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background-color: #2563eb;
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 12px;
+      margin: 12px 0;
+      text-align: center;
+    }
+
+    .footer {
+      padding: 24px 40px;
+      background-color: #0b1120;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .email-wrapper {
+        padding: 20px 10px;
+      }
+
+      .body-section {
+        padding: 24px 20px;
+      }
+
+      .footer {
+        padding: 20px;
+      }
+
+      .instructions-box,
+      .warning-box {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="email-wrapper">
+    <div class="email-content">
+
+      <div class="hero-section">
+        <img src="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/head.jpg"
+          alt="Zephyr Hackathon" class="robot-image" />
+      </div>
+
+      <div class="body-section">
+        <p><strong>Dear Team Member,</strong></p>
+
+        <p>We see that your team has successfully registered for <strong>ZÉPHYR 2026</strong> and selected a problem
+          statement. However, our records indicate that you have <strong>not yet submitted your presentation
+            (PPT)</strong>.</p>
+
+        <div class="warning-box">
+          <p>⚠️ ACTION REQUIRED: The deadline for submitting your PPT is October 4th, 2026. Failure to submit your
+            presentation by the deadline will result in automatic disqualification from the hackathon.</p>
+        </div>
+
+        <div class="instructions-box">
+          <p style="font-weight: 600; margin-bottom: 12px; color: #0f172a;">How to submit your PPT:</p>
+          <ol>
+            <li><strong>Log in</strong> to your team dashboard at <a href="https://zephyrptu.site/auth"
+                style="color: #2563eb;">zephyrptu.site/auth</a>.</li>
+            <li><strong>Download</strong> the official Zephyr PPT Template from the dashboard.</li>
+            <li><strong>Create</strong> your presentation using the template.</li>
+            <li><strong>Upload</strong> your completed PPT to Google Drive.</li>
+            <li><strong>Crucial Step:</strong> Make sure the Google Drive link sharing settings are set to
+              <strong>"Anyone with the link can view"</strong>.
+            </li>
+            <li><strong>Paste</strong> the Google Drive link into the submission box on your dashboard.</li>
+          </ol>
+        </div>
+
+        <center>
+          <a href="https://zephyrptu.site/auth" class="cta-button">Go to Dashboard</a>
+        </center>
+
+        <p style="margin-top: 24px;">Please double-check your link sharing permissions! If our judges cannot access the
+          file, your team's idea cannot be evaluated.</p>
+
+        <p>If you face any issues, feel free to reach out to our team.</p>
+
+        <p style="margin-top: 32px;">
+          Best of luck,<br />
+          <strong>The Organizing Committee, ZÉPHYR</strong><br />
+          Puducherry Technological University
+        </p>
+      </div>
+
+      <div class="footer">
+        <p class="footer-text">ZÉPHYR Hackathon 2026 • Microsoft Community Event</p>
+        <p class="footer-text" style="margin-top: 8px;">Puducherry Technological University, Puducherry</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>

@@ -16,9 +16,7 @@ export default function Auth() {
   const [step, setStep] = useState(1) // 1: Email, 2: OTP
   const [message, setMessage] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const [mode, setMode] = useState('signup') // 'login' or 'signup'
-  const [name, setName] = useState('')
-  const [college, setCollege] = useState('')
+  const [mode, setMode] = useState('login') // Forced to login only
   const [resendTimer, setResendTimer] = useState(0)
   const [globalSettings, setGlobalSettings] = useState(null)
   const navigate = useNavigate()
@@ -72,7 +70,7 @@ export default function Auth() {
     
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
-      options: { shouldCreateUser: mode === 'signup' }
+      options: { shouldCreateUser: false }
     })
 
     if (error) {
@@ -106,16 +104,8 @@ export default function Auth() {
       setErrorMsg(error.error_description || error.message)
       setLoading(false)
     } else {
-      if (mode === 'signup' && data?.session?.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.session.user.id,
-            email: data.session.user.email,
-            name: name,
-            college: college
-          })
-      }
+      // No signup logic here anymore since mode is forced to login
+
       navigate('/dashboard')
     }
   }
@@ -146,11 +136,11 @@ export default function Auth() {
         <div className="flex flex-col items-center mb-8">
           <img src="/logos/zephyr-logo-new.png" alt="Zephyr" className="w-[320px] md:w-[380px] mb-2 object-contain drop-shadow-lg" />
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-slate-900 drop-shadow-sm relative z-10">
-            {step === 1 ? (mode === 'login' ? 'Welcome Back' : 'Create Account') : 'Verification'}
+            {step === 1 ? 'Welcome Back' : 'Verification'}
           </h1>
           <p className="text-slate-600 text-sm text-center drop-shadow-sm">
             {step === 1 
-              ? (mode === 'login' ? 'Enter your email to securely log in.' : 'Join Zephyr Hackathon and start building.')
+              ? 'Enter your email to securely log in.'
               : `We sent a 6-digit code to ${email}`}
           </p>
         </div>
@@ -167,45 +157,6 @@ export default function Auth() {
                 onSubmit={handleSendOtp} 
                 className="flex flex-col gap-4"
               >
-                <AnimatePresence initial={false} mode="sync">
-                  {mode === 'signup' && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }} 
-                      animate={{ opacity: 1, height: 'auto' }} 
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ ...springConfig, opacity: { duration: 0.2 } }}
-                      className="flex flex-col gap-4 overflow-hidden"
-                    >
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                          <User size={16} />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Full Name"
-                          value={name}
-                          required={mode === 'signup'}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-white/95 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
-                        />
-                      </div>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                          <BookOpen size={16} />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="University / College"
-                          value={college}
-                          required={mode === 'signup'}
-                          onChange={(e) => setCollege(e.target.value)}
-                          className="w-full bg-white/95 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-sm"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 <div className="relative mt-2">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                     <Mail size={16} />
@@ -231,27 +182,7 @@ export default function Auth() {
                   {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
                 </motion.button>
                 
-                <div className="text-center mt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      if (mode === 'login') {
-                        if (!isRegistrationOpen()) {
-                          setErrorMsg('We are no longer accepting new registrations.')
-                          return;
-                        }
-                        setMode('signup')
-                      } else {
-                        setMode('login')
-                      }
-                      setErrorMsg('')
-                      setMessage('')
-                    }} 
-                    className="text-xs text-slate-500 hover:text-slate-800 transition-colors"
-                  >
-                    {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-                  </button>
-                </div>
+
               </motion.form>
             ) : (
               <motion.form 

@@ -966,6 +966,13 @@ function useActiveSection() {
 export default function Landing() {
   const [introComplete, setIntroComplete] = useState(false)
   const active = useActiveSection()
+  const [showRegistrationClosedModal, setShowRegistrationClosedModal] = useState(false)
+
+  useEffect(() => {
+    if (introComplete) {
+      setShowRegistrationClosedModal(true)
+    }
+  }, [introComplete])
 
   return (
     <>
@@ -1016,6 +1023,57 @@ export default function Landing() {
         <ContactSection />
       </main>
       <BottomNav active={active} />
+
+      <AnimatePresence>
+        {showRegistrationClosedModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 10000,
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '24px'
+            }}
+            onClick={() => setShowRegistrationClosedModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              style={{
+                background: '#fff', borderRadius: 24, padding: 32, maxWidth: 400,
+                textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ width: 64, height: 64, background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#ef4444' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+              </div>
+              <h3 style={{ fontSize: 24, fontWeight: 'bold', color: '#0b1120', marginBottom: 12 }}>
+                Registrations Closed
+              </h3>
+              <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
+                We are no longer accepting new team registrations. Only already registered and verified teams can log in and use the dashboard.
+              </p>
+              <button
+                onClick={() => setShowRegistrationClosedModal(false)}
+                style={{
+                  background: '#0b1120', color: '#fff', border: 'none',
+                  padding: '14px 24px', borderRadius: 14, fontWeight: 'bold', fontSize: 15,
+                  width: '100%', cursor: 'pointer', transition: 'background 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#1e293b'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#0b1120'}
+              >
+                Okay, got it
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
