@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [teamMemberData, setTeamMemberData] = useState(null);
   const [teamData, setTeamData] = useState(null);
+  const [globalSettings, setGlobalSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -65,6 +66,16 @@ export default function Dashboard() {
         
         if (tData) setTeamData(tData);
       }
+
+      // 4. Fetch global settings
+      const { data: settingsData } = await supabase
+        .from('global_settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      
+      if (settingsData) setGlobalSettings(settingsData);
+
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -82,6 +93,16 @@ export default function Dashboard() {
     if (session) {
       fetchDashboardData(session.user.id);
     }
+  };
+
+  const isRegistrationOpen = () => {
+    if (!globalSettings) return true; // Default to true while loading
+    if (globalSettings.registration_status === 'closed') return false;
+    if (globalSettings.registration_status === 'open') return true;
+    
+    // Auto mode
+    const deadline = new Date("October 4, 2026 23:59:59").getTime();
+    return new Date().getTime() <= deadline;
   };
 
   if (loading) {
@@ -134,19 +155,36 @@ export default function Dashboard() {
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 lg:p-8">
         <AnimatePresence mode="wait">
           {!teamData ? (
-            <motion.div
-              key="registration"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <TeamRegistrationForm 
-                user={session?.user} 
-                profile={profile} 
-                onComplete={handleRegistrationComplete} 
-              />
-            </motion.div>
+            isRegistrationOpen() ? (
+              <motion.div
+                key="registration"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <TeamRegistrationForm 
+                  user={session?.user} 
+                  profile={profile} 
+                  onComplete={handleRegistrationComplete} 
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="closed"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="max-w-md mx-auto mt-20 text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200"
+              >
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
+                  <Box className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-3">Registrations Closed</h2>
+                <p className="text-slate-600">
+                  We are no longer accepting new team registrations. If you believe this is an error, please contact the administrators.
+                </p>
+              </motion.div>
+            )
           ) : (
             <motion.div
               key="hub"
