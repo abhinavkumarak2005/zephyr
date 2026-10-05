@@ -12,6 +12,7 @@ export default function JudgeDashboard() {
   const [loading, setLoading] = useState(true);
   const [judgeName, setJudgeName] = useState('');
   const [judgeInfo, setJudgeInfo] = useState(null);
+  const [allProblemStatements, setAllProblemStatements] = useState([]);
   const [activeTab, setActiveTab] = useState('assigned');
   const [evalForm, setEvalForm] = useState({
     team_id: '',
@@ -47,6 +48,9 @@ export default function JudgeDashboard() {
       
       const { data: judgeData } = await supabase.from('judges').select('*').eq('id', judgeId).single();
       setJudgeInfo(judgeData);
+
+      const { data: psData } = await supabase.from('problem_statements').select('*').order('id', { ascending: true });
+      if (psData) setAllProblemStatements(psData);
 
       const { data, error } = await supabase
         .from('judge_assignments')
@@ -204,6 +208,13 @@ export default function JudgeDashboard() {
               <div className="flex items-center gap-3"><span className="font-medium text-sm">Evaluation</span></div>
             </button>
           )}
+          
+          <button 
+            onClick={() => setActiveTab('problem_statements')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'problem_statements' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}
+          >
+            <div className="flex items-center gap-3"><span className="font-medium text-sm">Problem Statements</span></div>
+          </button>
         </div>
 
         <div className="flex-1" />
@@ -247,6 +258,9 @@ export default function JudgeDashboard() {
                   Evaluation
                 </button>
               )}
+              <button onClick={() => setActiveTab('problem_statements')} className={`shrink-0 snap-start px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${activeTab === 'problem_statements' ? 'bg-blue-600 text-white shadow-sm' : 'bg-[#e8e8ed] text-[#86868b]'}`}>
+                Problem Statements
+              </button>
             </div>
           </div>
         </header>
@@ -260,7 +274,59 @@ export default function JudgeDashboard() {
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
-                <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+                
+                {/* Mobile View: Cards */}
+                <div className="block md:hidden divide-y divide-[#d2d2d7]/50">
+                  {teams.length === 0 && (
+                    <div className="p-8 text-center text-[#86868b]">No teams assigned to you yet.</div>
+                  )}
+                  {teams.map(team => (
+                    <div key={`mobile-${team.id}`} className="p-4 flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-semibold text-base text-[#1d1d1f] flex items-center gap-2">
+                            {team.team_name}
+                          </div>
+                          <div className="text-sm text-[#86868b] mt-0.5 font-mono">
+                            {team.team_id}
+                          </div>
+                        </div>
+                        {team.evalData && (
+                          <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-200/50">
+                            Evaluated
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-1">
+                        {team.presentation_link ? (
+                          <a href={team.presentation_link} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-semibold group bg-blue-50 px-3 py-1.5 rounded-lg">
+                            View PPT
+                            <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+                          </a>
+                        ) : (
+                          <span className="text-amber-600 bg-amber-50 px-2 py-1.5 rounded text-xs font-semibold">No PPT</span>
+                        )}
+                        
+                        <Button size="sm" onClick={() => toggleExpand(team.id)} variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-lg shadow-sm text-xs px-4">
+                          {expandedTeams.has(team.id) ? 'Hide Idea' : 'View Idea'}
+                        </Button>
+                      </div>
+
+                      {expandedTeams.has(team.id) && (
+                        <div className="mt-2 bg-[#f5f5f7]/50 p-4 rounded-xl border border-[#d2d2d7]/50">
+                          <h4 className="text-sm font-semibold text-[#1d1d1f] mb-2">Idea Description</h4>
+                          <p className="text-sm text-[#1d1d1f]/80 whitespace-pre-wrap leading-relaxed">
+                            {team.idea_description || team.problem_statements?.description || 'No idea description provided.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop View: Table */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
@@ -271,7 +337,7 @@ export default function JudgeDashboard() {
                     </thead>
                     <tbody className="divide-y divide-[#d2d2d7]/50">
                       {teams.map((team) => (
-                        <React.Fragment key={team.id}>
+                        <React.Fragment key={`desktop-${team.id}`}>
                           <tr className="hover:bg-[#f5f5f7]/50 transition-colors">
                             <td className="py-4 px-4">
                               <div className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
@@ -326,6 +392,37 @@ export default function JudgeDashboard() {
             </motion.div>
           )}
 
+          {activeTab === 'problem_statements' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="mb-6">
+                <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Problem Statements</h1>
+                <p className="text-[#86868b]">Review the domains and focus areas for your assigned teams.</p>
+              </div>
+
+              <div className="grid gap-6">
+                {allProblemStatements.map(ps => (
+                  <div key={ps.id} className="bg-white p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="font-mono text-sm font-bold text-slate-500">PS-{ps.id}</span>
+                      <div className="inline-block px-3 py-1 bg-blue-50 text-blue-700 font-semibold text-xs rounded-full">
+                        {ps.domain}
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-[#1d1d1f] mb-3">{ps.title}</h3>
+                    <p className="text-[#1d1d1f]/80 whitespace-pre-wrap leading-relaxed text-sm">
+                      {ps.description}
+                    </p>
+                  </div>
+                ))}
+                {allProblemStatements.length === 0 && (
+                  <div className="bg-white p-8 rounded-2xl shadow-sm border border-[#d2d2d7]/50 text-center text-[#86868b]">
+                    Loading problem statements...
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'eval' && judgeInfo?.evaluation_enabled && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="mb-6">
@@ -333,7 +430,7 @@ export default function JudgeDashboard() {
                 <p className="text-[#86868b]">Score your assigned teams based on the 5 key criteria (1-5).</p>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50 max-w-2xl">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50 max-w-2xl">
                 <form onSubmit={handleEvalSubmit} className="space-y-6">
                   <div>
                     <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-2 block">Select Team</label>
@@ -363,13 +460,13 @@ export default function JudgeDashboard() {
                       ].map(criteria => (
                         <div key={criteria.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <label className="text-sm font-semibold text-[#1d1d1f]">{criteria.label}</label>
-                          <div className="flex gap-2">
+                          <div className="flex justify-between w-full sm:w-auto sm:justify-start gap-2 mt-2 sm:mt-0">
                             {[1,2,3,4,5].map(score => (
                               <button
                                 type="button"
                                 key={score}
                                 onClick={() => setEvalForm({...evalForm, [criteria.key]: score})}
-                                className={`w-10 h-10 rounded-full font-bold transition-all flex items-center justify-center ${evalForm[criteria.key] === score ? 'bg-blue-600 text-white shadow-md' : 'bg-[#f5f5f7] text-[#86868b] hover:bg-[#e8e8ed]'}`}
+                                className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full font-bold transition-all flex items-center justify-center shrink-0 ${evalForm[criteria.key] === score ? 'bg-blue-600 text-white shadow-md' : 'bg-[#f5f5f7] text-[#86868b] hover:bg-[#e8e8ed]'}`}
                               >
                                 {score}
                               </button>
@@ -380,12 +477,12 @@ export default function JudgeDashboard() {
 
                       <div className="pt-4 border-t border-[#d2d2d7]/50">
                         <label className="text-sm font-semibold text-[#1d1d1f] mb-3 block">Final Verdict</label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex flex-col sm:flex-row gap-4 mt-2 sm:mt-0">
+                          <label className="flex items-center gap-2 cursor-pointer bg-[#f5f5f7] p-3 rounded-xl sm:bg-transparent sm:p-0">
                             <input type="radio" name="selected_status" checked={evalForm.selected_status === true} onChange={() => setEvalForm({...evalForm, selected_status: true})} className="w-5 h-5 text-blue-600 focus:ring-blue-500" />
                             <span className="font-medium text-green-700">Selected</span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className="flex items-center gap-2 cursor-pointer bg-[#f5f5f7] p-3 rounded-xl sm:bg-transparent sm:p-0">
                             <input type="radio" name="selected_status" checked={evalForm.selected_status === false} onChange={() => setEvalForm({...evalForm, selected_status: false})} className="w-5 h-5 text-red-600 focus:ring-red-500" />
                             <span className="font-medium text-red-700">Not Selected</span>
                           </label>

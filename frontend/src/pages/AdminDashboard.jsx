@@ -42,6 +42,11 @@ export default function AdminDashboard() {
   // Selected teams for Publish
   const [selectedToPublish, setSelectedToPublish] = useState([]);
   const [evalSubTab, setEvalSubTab] = useState('r1');
+  
+  // Evaluation Results Filters
+  const [evalFilterJudge, setEvalFilterJudge] = useState('ALL');
+  const [evalFilterVerdict, setEvalFilterVerdict] = useState('ALL');
+  const [evalFilterPS, setEvalFilterPS] = useState('ALL');
 
   // Notice State
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
@@ -931,7 +936,21 @@ export default function AdminDashboard() {
                               />
                             </td>
                             <td className="py-4 px-4">
-                              <div className="font-semibold text-sm text-[#1d1d1f]">{team.team_name}</div>
+                              <div className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
+                                {(() => {
+                                  const ev = evaluations.find(e => e.team_id === team.id && e.round_number === 1);
+                                  let color = 'bg-gray-400';
+                                  let title = 'Not Evaluated';
+                                  if (ev) {
+                                    color = ev.selected_status === true ? 'bg-green-500' : 'bg-red-500';
+                                    title = ev.selected_status === true ? 'Selected' : 'Not Selected';
+                                  }
+                                  return (
+                                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${color}`} title={title}></div>
+                                  );
+                                })()}
+                                {team.team_name}
+                              </div>
                               <div className="text-xs text-[#86868b] font-mono mt-0.5">{team.team_id} • {team.team_members?.length || 0} Members</div>
                             </td>
                             <td className="py-4 px-4 max-w-[200px] truncate text-sm">
@@ -1604,9 +1623,26 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 mb-6 p-1 bg-[#e8e8ed]/50 rounded-xl w-fit">
-                    <button onClick={() => setEvalSubTab('r1')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r1' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 1 Evaluations</button>
-                    <button onClick={() => setEvalSubTab('r2')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r2' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 2 Evaluations</button>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div className="flex gap-2 p-1 bg-[#e8e8ed]/50 rounded-xl w-fit">
+                      <button onClick={() => setEvalSubTab('r1')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r1' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 1 Evaluations</button>
+                      <button onClick={() => setEvalSubTab('r2')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r2' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 2 Evaluations</button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                      <select className="text-sm border rounded-xl px-3 py-1.5 bg-white border-[#d2d2d7] focus:outline-none" value={evalFilterJudge} onChange={e => setEvalFilterJudge(e.target.value)}>
+                        <option value="ALL">All Judges</option>
+                        {judges.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
+                      </select>
+                      <select className="text-sm border rounded-xl px-3 py-1.5 bg-white border-[#d2d2d7] focus:outline-none" value={evalFilterVerdict} onChange={e => setEvalFilterVerdict(e.target.value)}>
+                        <option value="ALL">All Verdicts</option>
+                        <option value="selected">Selected</option>
+                        <option value="not_selected">Not Selected</option>
+                      </select>
+                      <select className="text-sm border rounded-xl px-3 py-1.5 bg-white border-[#d2d2d7] focus:outline-none max-w-[150px] truncate" value={evalFilterPS} onChange={e => setEvalFilterPS(e.target.value)}>
+                        <option value="ALL">All PS</option>
+                        {problemStatements.map(ps => <option key={ps.id} value={ps.id}>PS-{ps.id}: {ps.title}</option>)}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
@@ -1621,7 +1657,15 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#d2d2d7]/50">
-                        {evaluations.filter(e => e.round_number === (evalSubTab === 'r1' ? 1 : 2)).map(ev => {
+                        {evaluations.filter(e => {
+                          if (e.round_number !== (evalSubTab === 'r1' ? 1 : 2)) return false;
+                          if (evalFilterJudge !== 'ALL' && e.judge_id !== evalFilterJudge) return false;
+                          if (evalFilterVerdict === 'selected' && e.selected_status !== true) return false;
+                          if (evalFilterVerdict === 'not_selected' && e.selected_status !== false) return false;
+                          const team = teams.find(t => t.id === e.team_id);
+                          if (evalFilterPS !== 'ALL' && team && team.problem_statement_id !== parseInt(evalFilterPS)) return false;
+                          return true;
+                        }).map(ev => {
                           const team = teams.find(t => t.id === ev.team_id);
                           const judge = judges.find(j => j.id === ev.judge_id);
                           return (
