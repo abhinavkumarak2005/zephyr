@@ -319,11 +319,11 @@ export default function JudgeDashboard() {
                   {evalForm.team_id && (
                     <div className="space-y-6 pt-4 border-t border-[#d2d2d7]/50">
                       {[
-                        { key: 'innovation', label: 'Innovation & Originality' },
-                        { key: 'tech_impl', label: 'Technical Implementation' },
-                        { key: 'impact', label: 'Impact & Relevance' },
-                        { key: 'business', label: 'Feasibility & Business Model' },
-                        { key: 'presentation', label: 'Presentation & Demo' }
+                        { key: 'impact', label: 'Problem Relevance & Clarity' },
+                        { key: 'innovation', label: 'Innovation and Originality' },
+                        { key: 'tech_impl', label: 'Solution approach and Technical Feasibility' },
+                        { key: 'business', label: 'Impact and Scalability' },
+                        { key: 'presentation', label: 'User Centricity and Usability' }
                       ].map(criteria => (
                         <div key={criteria.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <label className="text-sm font-semibold text-[#1d1d1f]">{criteria.label}</label>

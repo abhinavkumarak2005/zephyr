@@ -1636,11 +1636,11 @@ export default function AdminDashboard() {
                               <td className="py-4 px-4 text-sm text-[#1d1d1f]">
                                 {evalSubTab === 'r1' ? (
                                   <div className="flex gap-3 text-xs flex-wrap">
-                                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">Inn: {ev.innovation || '-'}</span>
-                                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded">Tech: {ev.tech_impl || '-'}</span>
-                                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded">Imp: {ev.impact || '-'}</span>
-                                    <span className="bg-pink-50 text-pink-700 px-2 py-1 rounded">Bus: {ev.business || '-'}</span>
-                                    <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded">Pre: {ev.presentation || '-'}</span>
+                                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded" title="Problem Relevance & Clarity">Rel: {ev.impact || '-'}</span>
+                                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded" title="Innovation and Originality">Inn: {ev.innovation || '-'}</span>
+                                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded" title="Solution approach and Technical Feasibility">Tech: {ev.tech_impl || '-'}</span>
+                                    <span className="bg-pink-50 text-pink-700 px-2 py-1 rounded" title="Impact and Scalability">Imp: {ev.business || '-'}</span>
+                                    <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded" title="User Centricity and Usability">Usr: {ev.presentation || '-'}</span>
                                     <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded font-bold">Tot: {ev.total_score || '-'}</span>
                                   </div>
                                 ) : (
