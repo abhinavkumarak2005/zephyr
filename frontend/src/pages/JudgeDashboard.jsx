@@ -64,11 +64,11 @@ export default function JudgeDashboard() {
       
       const processedTeams = data.map(assignment => {
         const team = assignment.teams;
-        // Filter evaluations for Round 2
-        const r2Eval = (team.evaluations || []).find(e => e.round_number === 2);
+        // Filter evaluations for Round 1 for this judge
+        const myEval = (team.evaluations || []).find(e => e.round_number === 1 && e.judge_id === judgeId);
         return {
           ...team,
-          evalData: r2Eval || null
+          evalData: myEval || null
         };
       });
 
@@ -95,6 +95,33 @@ export default function JudgeDashboard() {
       newExpanded.add(teamId);
     }
     setExpandedTeams(newExpanded);
+  };
+
+  const handleTeamSelect = (e) => {
+    const selectedTeamId = e.target.value;
+    const team = teams.find(t => t.id === selectedTeamId);
+    
+    if (team && team.evalData) {
+      setEvalForm({
+        team_id: selectedTeamId,
+        innovation: team.evalData.innovation || 3,
+        tech_impl: team.evalData.tech_impl || 3,
+        impact: team.evalData.impact || 3,
+        business: team.evalData.business || 3,
+        presentation: team.evalData.presentation || 3,
+        selected_status: team.evalData.selected_status || false
+      });
+    } else {
+      setEvalForm({
+        team_id: selectedTeamId,
+        innovation: 3,
+        tech_impl: 3,
+        impact: 3,
+        business: 3,
+        presentation: 3,
+        selected_status: false
+      });
+    }
   };
 
   const handleEvalSubmit = async (e) => {
@@ -136,6 +163,8 @@ export default function JudgeDashboard() {
     alert('Evaluation saved successfully!');
     // Reset form
     setEvalForm({ ...evalForm, team_id: '' });
+    // Refresh to show evaluated status
+    fetchAssignedTeams();
   };
 
   if (loading) {
@@ -245,8 +274,13 @@ export default function JudgeDashboard() {
                         <React.Fragment key={team.id}>
                           <tr className="hover:bg-[#f5f5f7]/50 transition-colors">
                             <td className="py-4 px-4">
-                              <div className="font-semibold text-sm text-[#1d1d1f]">
+                              <div className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
                                 {team.team_name}
+                                {team.evalData && (
+                                  <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-200/50">
+                                    Evaluated
+                                  </span>
+                                )}
                               </div>
                               <div className="text-xs text-[#86868b] mt-0.5 font-mono">
                                 {team.team_id}
@@ -306,12 +340,14 @@ export default function JudgeDashboard() {
                     <select 
                       className="w-full border rounded-xl px-4 py-3 bg-[#f5f5f7] border-[#d2d2d7] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={evalForm.team_id}
-                      onChange={e => setEvalForm({...evalForm, team_id: e.target.value})}
+                      onChange={handleTeamSelect}
                       required
                     >
                       <option value="">-- Choose a team to evaluate --</option>
                       {teams.map(t => (
-                        <option key={t.id} value={t.id}>{t.team_name} ({t.team_id})</option>
+                        <option key={t.id} value={t.id}>
+                          {t.team_name} ({t.team_id}) {t.evalData ? '✅ Evaluated' : ''}
+                        </option>
                       ))}
                     </select>
                   </div>
