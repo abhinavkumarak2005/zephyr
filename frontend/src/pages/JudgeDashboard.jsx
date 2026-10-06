@@ -13,7 +13,7 @@ export default function JudgeDashboard() {
   const [judgeName, setJudgeName] = useState('');
   const [judgeInfo, setJudgeInfo] = useState(null);
   const [allProblemStatements, setAllProblemStatements] = useState([]);
-  const [activeTab, setActiveTab] = useState('assigned');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [evalForm, setEvalForm] = useState({
     team_id: '',
     innovation: 3,
@@ -194,6 +194,13 @@ export default function JudgeDashboard() {
         <div className="px-4 py-4 space-y-1">
           <p className="px-2 text-xs font-semibold text-[#86868b] uppercase tracking-widest mb-2">Evaluations</p>
           <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}
+          >
+            <div className="flex items-center gap-3"><span className="font-medium text-sm">Dashboard</span></div>
+          </button>
+          
+          <button 
             onClick={() => setActiveTab('assigned')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'assigned' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}
           >
@@ -233,7 +240,7 @@ export default function JudgeDashboard() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen overflow-x-hidden">
         
         {/* Header (Mobile) */}
         <header className="sticky top-0 z-10 bg-[#f5f5f7]/80 backdrop-blur-2xl border-b border-[#d2d2d7]/50">
@@ -249,7 +256,10 @@ export default function JudgeDashboard() {
               </div>
             </div>
 
-            <div className="flex md:hidden w-full overflow-x-auto pb-2 -mx-4 px-4 gap-2 snap-x" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex md:hidden w-[100vw] overflow-x-auto pb-2 -mx-4 px-4 gap-2 snap-x" style={{ scrollbarWidth: 'none' }}>
+              <button onClick={() => setActiveTab('dashboard')} className={`shrink-0 snap-start px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-sm' : 'bg-[#e8e8ed] text-[#86868b]'}`}>
+                Dashboard
+              </button>
               <button onClick={() => setActiveTab('assigned')} className={`shrink-0 snap-start px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${activeTab === 'assigned' ? 'bg-blue-600 text-white shadow-sm' : 'bg-[#e8e8ed] text-[#86868b]'}`}>
                 Assigned Teams
               </button>
@@ -266,6 +276,105 @@ export default function JudgeDashboard() {
         </header>
 
         <main className="flex-1 p-4 md:p-8 max-w-[1400px] w-full mx-auto">
+          {activeTab === 'dashboard' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="mb-6">
+                <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Dashboard Overview</h1>
+                <p className="text-[#86868b]">Overview of your team assignments and evaluation progress.</p>
+              </div>
+
+              {(() => {
+                const totalAssigned = teams.length;
+                const myEvals = teams.map(t => {
+                  const myEvs = t.evaluations?.filter(e => e.judge_id === judgeInfo?.id) || [];
+                  const latestEv = myEvs.length > 0 ? myEvs[myEvs.length - 1] : null;
+                  return { team: t, eval: latestEv };
+                });
+                
+                const evaluatedTeams = myEvals.filter(me => me.eval);
+                const selectedTeams = evaluatedTeams.filter(me => me.eval.selected_status === true);
+                const notSelectedTeams = evaluatedTeams.filter(me => me.eval.selected_status === false);
+
+                return (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                        <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Total Assigned</span>
+                        <span className="text-2xl font-bold text-[#1d1d1f]">{totalAssigned}</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                        <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Evaluated</span>
+                        <span className="text-2xl font-bold text-blue-600">{evaluatedTeams.length}</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                        <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Selected</span>
+                        <span className="text-2xl font-bold text-green-600">{selectedTeams.length}</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                        <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Not Selected</span>
+                        <span className="text-2xl font-bold text-red-600">{notSelectedTeams.length}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                      {/* Mobile View: Cards */}
+                      <div className="block md:hidden divide-y divide-[#d2d2d7]/50">
+                        {myEvals.length === 0 && (
+                          <div className="p-8 text-center text-[#86868b]">No teams assigned.</div>
+                        )}
+                        {myEvals.map(({team, eval: ev}) => (
+                          <div key={`mobile-dashboard-${team.id}`} className="p-4 flex justify-between items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-base text-[#1d1d1f] truncate">{team.team_name}</div>
+                              <div className="text-sm text-[#86868b] mt-0.5 font-mono truncate">{team.team_id}</div>
+                            </div>
+                            <div className="flex-shrink-0">
+                              {!ev && <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">Pending</span>}
+                              {ev && ev.selected_status === true && <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 border border-green-200">Selected</span>}
+                              {ev && ev.selected_status === false && <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200">Not Selected</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Desktop View: Table */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Verdict</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#d2d2d7]/50">
+                            {myEvals.map(({team, eval: ev}) => (
+                              <tr key={team.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                                <td className="py-4 px-4">
+                                  <div className="font-semibold text-sm text-[#1d1d1f]">{team.team_name}</div>
+                                  <div className="text-xs text-[#86868b] font-mono mt-0.5">{team.team_id}</div>
+                                </td>
+                                <td className="py-4 px-4">
+                                  {!ev && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">Pending</span>}
+                                  {ev && ev.selected_status === true && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">Selected</span>}
+                                  {ev && ev.selected_status === false && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">Not Selected</span>}
+                                </td>
+                              </tr>
+                            ))}
+                            {myEvals.length === 0 && (
+                              <tr>
+                                <td colSpan="2" className="text-center py-8 text-[#86868b]">No teams assigned.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </motion.div>
+          )}
+
           {activeTab === 'assigned' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="mb-6">
