@@ -57,6 +57,8 @@ export default function AdminDashboard() {
   const [rejectR1Team, setRejectR1Team] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   
+  const [r1EvaluationFilter, setR1EvaluationFilter] = useState('ALL');
+
   const [conditionalTeam, setConditionalTeam] = useState(null);
   const [conditionalReason, setConditionalReason] = useState('');
   
@@ -139,6 +141,22 @@ export default function AdminDashboard() {
     await supabase.from('teams').update({ is_eliminated: true, rejection_reason: rejectionReason }).eq('id', rejectR1Team.id);
     setRejectR1Team(null);
     setRejectionReason('');
+    fetchTeams();
+  };
+
+  const handleBulkPromoteToRound2 = async () => {
+    if (selectedR1Teams.size === 0) return;
+    await supabase.from('teams').update({ current_round: 2 }).in('id', Array.from(selectedR1Teams));
+    setSelectedR1Teams(new Set());
+    fetchTeams();
+  };
+
+  const handleBulkRejectIdea = async () => {
+    if (selectedR1Teams.size === 0) return;
+    const confirmReject = window.confirm(`Are you sure you want to reject ${selectedR1Teams.size} teams?`);
+    if (!confirmReject) return;
+    await supabase.from('teams').update({ is_eliminated: true, rejection_reason: 'Bulk rejected' }).in('id', Array.from(selectedR1Teams));
+    setSelectedR1Teams(new Set());
     fetchTeams();
   };
 
@@ -475,21 +493,21 @@ export default function AdminDashboard() {
   };
 
   const copyAllLeadersEmails = () => {
-    const emails = teams.flatMap(t => t.team_members?.filter(m => m.is_leader).map(m => m.email) || []);
-    handleCopy(emails.join(', '));
-    alert('Copied all Leader emails to clipboard!');
+    const emails = getRosterTeams().flatMap(t => t.team_members?.filter(m => m.is_leader).map(m => m.email) || []);
+    handleCopy(emails.join('\n'));
+    alert(`Copied ${emails.length} Leader emails from this section to clipboard!`);
   };
 
   const copyAllMembersEmails = () => {
-    const emails = teams.flatMap(t => t.team_members?.map(m => m.email) || []);
-    handleCopy(emails.join(', '));
-    alert('Copied all Member emails to clipboard!');
+    const emails = getRosterTeams().flatMap(t => t.team_members?.map(m => m.email) || []);
+    handleCopy(emails.join('\n'));
+    alert(`Copied ${emails.length} Member emails from this section to clipboard!`);
   };
 
   const copyAllMembersPhones = () => {
-    const phones = teams.flatMap(t => t.team_members?.map(m => m.phone).filter(p => p) || []);
-    handleCopy(phones.join(', '));
-    alert('Copied all Member phones to clipboard!');
+    const phones = getRosterTeams().flatMap(t => t.team_members?.map(m => m.phone).filter(p => p) || []);
+    handleCopy(phones.join('\n'));
+    alert(`Copied ${phones.length} Member phones from this section to clipboard!`);
   };
 
   const filteredTeams = teams.filter(t => 
@@ -501,7 +519,19 @@ export default function AdminDashboard() {
     )
   );
 
-  const r1Teams = filteredTeams.filter(t => (t.current_round || 1) === 1 && !t.is_eliminated);
+  const r1Teams = filteredTeams.filter(t => {
+    if ((t.current_round || 1) !== 1 || t.is_eliminated) return false;
+    
+    if (r1EvaluationFilter === 'ALL') return true;
+    
+    const ev = evaluations.find(e => e.team_id === t.id && e.round_number === 1);
+    
+    if (r1EvaluationFilter === 'PENDING') return !ev;
+    if (r1EvaluationFilter === 'SELECTED') return ev && ev.selected_status === true;
+    if (r1EvaluationFilter === 'NOT_SELECTED') return ev && ev.selected_status === false;
+    
+    return true;
+  });
   const r2TeamsAll = filteredTeams.filter(t => t.current_round === 2 && !t.is_eliminated);
   const r2TeamsEvaluations = r2TeamsAll.filter(t => t.payment_status === 'paid');
   const r3Teams = filteredTeams.filter(t => t.current_round === 3 && !t.is_eliminated);
@@ -870,9 +900,21 @@ export default function AdminDashboard() {
                   </div>
                   
                    <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
-                    <div className="p-4 border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="text-sm font-medium text-slate-700">
-                        {selectedR1Teams.size} teams selected
+                    <div className="p-4 border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/30 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm font-medium text-slate-700 whitespace-nowrap">
+                          {selectedR1Teams.size} teams selected
+                        </div>
+                        <select 
+                          className="text-sm border rounded-full px-4 py-1.5 bg-white border-[#d2d2d7]"
+                          value={r1EvaluationFilter}
+                          onChange={(e) => setR1EvaluationFilter(e.target.value)}
+                        >
+                          <option value="ALL">All Status</option>
+                          <option value="SELECTED">🟢 Selected</option>
+                          <option value="NOT_SELECTED">🔴 Not Selected</option>
+                          <option value="PENDING">⚪ Not Evaluated</option>
+                        </select>
                       </div>
                       <div className="flex gap-2 w-full sm:w-auto">
                         <select 
@@ -892,6 +934,23 @@ export default function AdminDashboard() {
                           className="bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-sm text-xs px-6"
                         >
                           Bulk Assign
+                        </Button>
+                        <div className="w-px h-6 bg-slate-300 mx-2 self-center hidden sm:block"></div>
+                        <Button 
+                          size="sm" 
+                          onClick={handleBulkPromoteToRound2} 
+                          disabled={selectedR1Teams.size === 0}
+                          className="bg-green-600 hover:bg-green-700 text-white rounded-full shadow-sm text-xs px-6"
+                        >
+                          Bulk Promote
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={handleBulkRejectIdea} 
+                          disabled={selectedR1Teams.size === 0}
+                          className="bg-red-600 hover:bg-red-700 text-white rounded-full shadow-sm text-xs px-6"
+                        >
+                          Bulk Reject
                         </Button>
                       </div>
                     </div>
