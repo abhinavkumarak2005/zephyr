@@ -1623,6 +1623,36 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {(() => {
+                    const currentRoundNum = evalSubTab === 'r1' ? 1 : 2;
+                    const currentRoundTeamsCount = currentRoundNum === 1 ? teams.length : teams.filter(t => t.payment_status === 'paid').length;
+                    const currentRoundEvals = evaluations.filter(e => e.round_number === currentRoundNum);
+                    const evaluatedCount = currentRoundEvals.length;
+                    const selectedCount = currentRoundEvals.filter(e => e.selected_status === true).length;
+                    const notSelectedCount = currentRoundEvals.filter(e => e.selected_status === false).length;
+
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                          <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Total Teams</span>
+                          <span className="text-2xl font-bold text-[#1d1d1f]">{currentRoundTeamsCount}</span>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                          <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Evaluated</span>
+                          <span className="text-2xl font-bold text-blue-600">{evaluatedCount}</span>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                          <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Selected</span>
+                          <span className="text-2xl font-bold text-green-600">{selectedCount}</span>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#d2d2d7]/50 flex flex-col">
+                          <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider mb-1">Not Selected</span>
+                          <span className="text-2xl font-bold text-red-600">{notSelectedCount}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div className="flex gap-2 p-1 bg-[#e8e8ed]/50 rounded-xl w-fit">
                       <button onClick={() => setEvalSubTab('r1')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r1' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 1 Evaluations</button>
