@@ -11,9 +11,9 @@ SMTP_PORT = 587
 SENDER_EMAIL = "zephyr@ptuniv.edu.in"
 APP_PASSWORD = "isyj zifr oihe ijsv" 
 
-SUBJECT = "Congratulations! You're Selected for Round 2 - Zéphyr 2026"
-HTML_TEMPLATE_PATH = "frontend/r1_selected_template.html"
-RECIPIENTS_CSV_PATH = "test.csv"   # Ensure this file has an 'email' column
+SUBJECT = "Important: Round 2 Presentation Guidelines - Zéphyr 2026"
+HTML_TEMPLATE_PATH = "frontend/r2_ppt_update_template.html"
+RECIPIENTS_CSV_PATH = "test.csv" # Ensure this file has an 'email' column
 # =================================================
 
 def main():

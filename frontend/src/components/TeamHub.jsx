@@ -208,7 +208,11 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                   <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" /> Application Rejected
                   </h4>
-                  <p className="text-sm text-red-800 font-medium whitespace-pre-wrap">{teamData.rejection_reason}</p>
+                  <p className="text-sm text-red-800 font-medium whitespace-pre-wrap">
+                    {teamData.rejection_reason?.toLowerCase().trim() === 'bulk rejected' 
+                      ? 'Sorry, but better luck next time.' 
+                      : teamData.rejection_reason}
+                  </p>
                 </div>
               )}
 

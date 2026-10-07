@@ -13,7 +13,7 @@ APP_PASSWORD = "isyj zifr oihe ijsv"
 
 SUBJECT = "Update on Round 1 Results - Zéphyr 2026"
 HTML_TEMPLATE_PATH = "frontend/r1_not_selected_template.html"
-RECIPIENTS_CSV_PATH = "not_selected_teams.csv" # Ensure this file has an 'email' column
+RECIPIENTS_CSV_PATH = "test.csv" # Ensure this file has an 'email' column
 # =================================================
 
 def main():
