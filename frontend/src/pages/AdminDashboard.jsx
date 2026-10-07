@@ -550,6 +550,8 @@ export default function AdminDashboard() {
   // Team Roster Data
   const getRosterTeams = () => {
     if (rosterSubTab === 'r1') return filteredTeams.filter(t => (t.current_round || 1) === 1 && !t.is_eliminated);
+    if (rosterSubTab === 'r1_selected') return filteredTeams.filter(t => t.current_round >= 2);
+    if (rosterSubTab === 'r1_not_selected') return filteredTeams.filter(t => (t.current_round || 1) === 1 && t.is_eliminated);
     if (rosterSubTab === 'r2') return filteredTeams.filter(t => t.current_round === 2 && !t.is_eliminated);
     if (rosterSubTab === 'r2_disqualified') return filteredTeams.filter(t => t.current_round === 2 && t.is_eliminated);
     if (rosterSubTab === 'r3') return filteredTeams.filter(t => t.current_round === 3 && !t.is_eliminated);
@@ -1432,6 +1434,8 @@ export default function AdminDashboard() {
                   <div className="flex bg-[#e8e8ed] p-1 rounded-full w-full max-w-full overflow-x-auto no-scrollbar mb-6">
                     <button onClick={() => setRosterSubTab('all')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'all' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>All Teams</button>
                     <button onClick={() => setRosterSubTab('r1')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'r1' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 1</button>
+                    <button onClick={() => setRosterSubTab('r1_selected')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'r1_selected' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>R1 Selected</button>
+                    <button onClick={() => setRosterSubTab('r1_not_selected')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'r1_not_selected' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>R1 Not Selected</button>
                     <button onClick={() => setRosterSubTab('r2')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'r2' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 2</button>
                     <button onClick={() => setRosterSubTab('r2_disqualified')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'r2_disqualified' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>R2 Disqualified</button>
                     <button onClick={() => setRosterSubTab('utr_mismatch')} className={`px-4 py-1.5 whitespace-nowrap text-sm font-medium rounded-full transition-all shrink-0 ${rosterSubTab === 'utr_mismatch' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>UTR Mismatch</button>

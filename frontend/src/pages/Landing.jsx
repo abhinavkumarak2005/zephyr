@@ -1049,14 +1049,14 @@ export default function Landing() {
               }}
               onClick={e => e.stopPropagation()}
             >
-              <div style={{ width: 64, height: 64, background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#ef4444' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+              <div style={{ width: 64, height: 64, background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#16a34a' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
               </div>
               <h3 style={{ fontSize: 24, fontWeight: 'bold', color: '#0b1120', marginBottom: 12 }}>
-                Registrations Closed
+                Round 1 Results Out!
               </h3>
               <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
-                We are no longer accepting new team registrations. Only already registered and verified teams can log in and use the dashboard.
+                The Round 1 results have been officially announced. Please check your participant dashboard to view your selection status and Round 2 instructions.
               </p>
               <button
                 onClick={() => setShowRegistrationClosedModal(false)}

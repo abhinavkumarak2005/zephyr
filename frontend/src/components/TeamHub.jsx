@@ -12,6 +12,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
   const [updating, setUpdating] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [broadcastNotice, setBroadcastNotice] = useState('');
+  const [activeTab, setActiveTab] = useState('ppt');
 
   React.useEffect(() => {
     async function fetchNotice() {
@@ -170,13 +171,35 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
         <div className="lg:col-span-2 space-y-6">
           <Card className="bg-white shadow-sm border border-slate-200 relative z-10">
             <CardHeader className="bg-slate-50/50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                Project Submission
-              </CardTitle>
-              <CardDescription>
-                Submit your idea presentation based on the Zephyr template.
-              </CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <CardTitle>
+                      {currentRound === 2 ? "Action Hub" : "Project Submission"}
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      {currentRound === 2 ? "Manage your Round 2 presentation and payments." : "Submit your idea presentation based on the Zephyr template."}
+                    </CardDescription>
+                  </div>
+                </div>
+                {currentRound === 2 && (
+                  <div className="flex items-center gap-2 bg-slate-200/50 p-1 rounded-lg shrink-0">
+                    <button
+                      onClick={() => setActiveTab('ppt')}
+                      className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'ppt' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      Presentation
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('payment')}
+                      className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'payment' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      Payment
+                    </button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               
@@ -199,7 +222,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                 </div>
               )}
 
-              {currentRound === 1 && !teamData.is_eliminated && (
+              {(currentRound === 1 || (currentRound === 2 && activeTab === 'ppt')) && !teamData.is_eliminated && (
                 <>
                   <div className="mb-6 p-5 rounded-xl border border-amber-300 bg-amber-50 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
@@ -208,27 +231,40 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                       {teamData.presentation_link ? 'Update Your Presentation' : 'Action Required: Submit Your Presentation'}
                     </h4>
                     <ul className="text-sm text-amber-800 space-y-2 list-disc pl-5">
-                      <li>Download the official Zephyr PPT Template using the button below.</li>
-                      <li>
-                        Fill it out with your idea. <strong>You will need to include your IDs:</strong>
-                        <div className="mt-1 flex items-center gap-3">
-                          <span className="bg-white/80 px-2 py-0.5 rounded text-amber-900 font-mono text-xs font-bold border border-amber-300">Team ID: {teamData.team_id}</span>
-                          <span className="bg-white/80 px-2 py-0.5 rounded text-amber-900 font-mono text-xs font-bold border border-amber-300">Problem ID: PS-{teamData.problem_statement_id || teamData.problem_statements?.id}</span>
-                        </div>
-                      </li>
-                      <li>Upload the finished presentation to Google Drive and ensure link sharing is set to "Anyone with the link can view".</li>
-                      <li>Paste the viewable link below and click {teamData.presentation_link ? 'Update' : 'Save'}.</li>
+                      {currentRound === 1 ? (
+                        <>
+                          <li>Download the official Zephyr PPT Template using the button below.</li>
+                          <li>
+                            Fill it out with your idea. <strong>You will need to include your IDs:</strong>
+                            <div className="mt-1 flex items-center gap-3">
+                              <span className="bg-white/80 px-2 py-0.5 rounded text-amber-900 font-mono text-xs font-bold border border-amber-300">Team ID: {teamData.team_id}</span>
+                              <span className="bg-white/80 px-2 py-0.5 rounded text-amber-900 font-mono text-xs font-bold border border-amber-300">Problem ID: PS-{teamData.problem_statement_id || teamData.problem_statements?.id}</span>
+                            </div>
+                          </li>
+                          <li>Upload the finished presentation to Google Drive and ensure link sharing is set to "Anyone with the link can view".</li>
+                          <li>Paste the viewable link below and click {teamData.presentation_link ? 'Update' : 'Save'}.</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>Detailed architecture diagram</li>
+                          <li>Input and Output fields if present</li>
+                          <li>Process flow with sub-modules and its description</li>
+                          <li>Workflow model (if possible)</li>
+                        </>
+                      )}
                     </ul>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                    <Button asChild variant="outline" className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50">
-                      <a href="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/Zephyr%20PPT%20Template(New).pptx" download target="_blank" rel="noreferrer">
-                        <Download className="w-4 h-4" />
-                        Download Zephyr Template
-                      </a>
-                    </Button>
-                  </div>
+                  {currentRound === 1 && (
+                    <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                      <Button asChild variant="outline" className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50">
+                        <a href="https://duoctfpncojorbsnehrc.supabase.co/storage/v1/object/public/Images/Zephyr%20PPT%20Template(New).pptx" download target="_blank" rel="noreferrer">
+                          <Download className="w-4 h-4" />
+                          Download Zephyr Template
+                        </a>
+                      </Button>
+                    </div>
+                  )}
 
                   <form onSubmit={handleUpdateLink} className="space-y-4">
                     <div className="space-y-2">
@@ -274,7 +310,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                 </>
               )}
 
-              {currentRound === 2 && (
+              {currentRound === 2 && activeTab === 'payment' && (
                 <>
                   {(paymentStatus === 'pending' || paymentStatus === 'rejected') && (
                     <div className="space-y-6">
