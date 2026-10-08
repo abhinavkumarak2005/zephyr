@@ -18,6 +18,7 @@ export default function AdminDashboard() {
   const [problemStatements, setProblemStatements] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
   const [judges, setJudges] = useState([]);
+  const [panels, setPanels] = useState([]);
   const [judgeAssignments, setJudgeAssignments] = useState([]);
   const [metrics, setMetrics] = useState({ profileCount: 0 });
   const [globalSettings, setGlobalSettings] = useState({ broadcast_notice: '', registration_status: 'auto' });
@@ -58,12 +59,22 @@ export default function AdminDashboard() {
   const [rejectionReason, setRejectionReason] = useState('');
   
   const [r1EvaluationFilter, setR1EvaluationFilter] = useState('ALL');
+  const [r2EvaluationFilter, setR2EvaluationFilter] = useState('ALL');
+  const [r2PanelFilter, setR2PanelFilter] = useState('ALL');
+  const [expandedEvalTeams, setExpandedEvalTeams] = useState(new Set());
 
   const [conditionalTeam, setConditionalTeam] = useState(null);
   const [conditionalReason, setConditionalReason] = useState('');
   
   const [selectedR1Teams, setSelectedR1Teams] = useState(new Set());
   const [bulkJudgeSelection, setBulkJudgeSelection] = useState('');
+
+  // R2 Logic State
+  const [selectedR2Teams, setSelectedR2Teams] = useState(new Set());
+  const [lastSelectedTeamId, setLastSelectedTeamId] = useState(null);
+  const [selectedPaymentTeams, setSelectedPaymentTeams] = useState(new Set());
+  const [lastSelectedPaymentTeamId, setLastSelectedPaymentTeamId] = useState(null);
+  const [bulkPanelSelection, setBulkPanelSelection] = useState('');
 
   // R3 Check-in
   const [qrCodeInput, setQrCodeInput] = useState('');
@@ -114,6 +125,11 @@ export default function AdminDashboard() {
       .from('judge_assignments')
       .select('*');
 
+    const { data: panelData } = await supabase
+      .from('panels')
+      .select('*')
+      .order('created_at', { ascending: true });
+
     const { data: psData } = await supabase.from('problem_statements').select('*').order('id', { ascending: true });
     const { count: profileCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const { data: settingsData } = await supabase.from('global_settings').select('*').eq('id', 1).single();
@@ -122,6 +138,7 @@ export default function AdminDashboard() {
     if (!evalErr) setEvaluations(evalData || []);
     if (volData) setVolunteers(volData);
     if (judgeData) setJudges(judgeData);
+    if (panelData) setPanels(panelData);
     if (assignData) setJudgeAssignments(assignData);
     if (psData) setProblemStatements(psData);
     if (settingsData) setGlobalSettings(settingsData);
@@ -382,9 +399,37 @@ export default function AdminDashboard() {
     fetchTeams();
   };
 
+  const handleBulkAssignPanelR2 = async () => {
+    if (!bulkPanelSelection || selectedR2Teams.size === 0) return;
+    
+    const teamIds = Array.from(selectedR2Teams);
+    const valueToSet = bulkPanelSelection === 'Unassigned' ? null : bulkPanelSelection;
+    const { error } = await supabase.from('teams').update({ r2_panel: valueToSet }).in('id', teamIds);
+    
+    if (error) {
+      console.error("Failed to assign panel:", error);
+      alert(`Failed to assign panel: ${error.message}`);
+    } else {
+      setSelectedR2Teams(new Set());
+      setBulkPanelSelection('');
+      fetchTeams();
+    }
+  };
+
   const handleVerifyPayment = async (teamId) => {
     await supabase.from('teams').update({ payment_status: 'paid' }).eq('id', teamId);
     fetchTeams();
+  };
+
+  const handleBulkVerifyPayment = async () => {
+    if (selectedPaymentTeams.size === 0) return;
+    if (!window.confirm(`Are you sure you want to verify payments for ${selectedPaymentTeams.size} team(s)?`)) return;
+    
+    const teamIds = Array.from(selectedPaymentTeams);
+    await supabase.from('teams').update({ payment_status: 'paid' }).in('id', teamIds);
+    fetchTeams();
+    setSelectedPaymentTeams(new Set());
+    setLastSelectedPaymentTeamId(null);
   };
 
   const handleRejectPayment = async (team) => {
@@ -532,8 +577,25 @@ export default function AdminDashboard() {
     
     return true;
   });
-  const r2TeamsAll = filteredTeams.filter(t => t.current_round === 2 && !t.is_eliminated);
-  const r2TeamsEvaluations = r2TeamsAll.filter(t => t.payment_status === 'paid');
+  const r2TeamsAll = filteredTeams.filter(t => {
+    if (t.current_round !== 2 || t.is_eliminated) return false;
+    
+    if (r2PanelFilter !== 'ALL') {
+      if (r2PanelFilter === 'Unassigned' && t.r2_panel) return false;
+      if (r2PanelFilter !== 'Unassigned' && t.r2_panel !== r2PanelFilter) return false;
+    }
+    
+    return true;
+  });
+  const r2TeamsEvaluations = r2TeamsAll.filter(t => {
+    if (r2EvaluationFilter === 'ALL') return true;
+    const evals = evaluations.filter(e => e.team_id === t.id && e.round_number === 2);
+    if (r2EvaluationFilter === 'PENDING') return evals.length === 0;
+    const hasSelected = evals.some(e => e.selected_status === true);
+    if (r2EvaluationFilter === 'SELECTED') return evals.length > 0 && hasSelected;
+    if (r2EvaluationFilter === 'NOT_SELECTED') return evals.length > 0 && !hasSelected;
+    return true;
+  });
   const r3Teams = filteredTeams.filter(t => t.current_round === 3 && !t.is_eliminated);
 
   // Evaluated Teams for Publish Tab
@@ -633,6 +695,7 @@ export default function AdminDashboard() {
   const [newJudgeEmail, setNewJudgeEmail] = useState('');
   const [newJudgePassword, setNewJudgePassword] = useState('');
   const [newJudgeName, setNewJudgeName] = useState('');
+  const [newJudgePanel, setNewJudgePanel] = useState('');
 
   const handleAddJudge = async (e) => {
     e.preventDefault();
@@ -641,7 +704,8 @@ export default function AdminDashboard() {
     const { error } = await supabase.from('judges').insert([{
       email: newJudgeEmail,
       password: newJudgePassword,
-      name: newJudgeName
+      name: newJudgeName,
+      panel_name: newJudgePanel
     }]);
 
     if (error) {
@@ -650,6 +714,7 @@ export default function AdminDashboard() {
       setNewJudgeEmail('');
       setNewJudgePassword('');
       setNewJudgeName('');
+      setNewJudgePanel('');
       fetchTeams();
     }
   };
@@ -661,8 +726,59 @@ export default function AdminDashboard() {
     }
   };
 
+  const [newPanelName, setNewPanelName] = useState('');
+  const [newPanelUsername, setNewPanelUsername] = useState('');
+  const [newPanelPassword, setNewPanelPassword] = useState('');
+
+  const handleAddPanel = async (e) => {
+    e.preventDefault();
+    if (!newPanelName || !newPanelUsername || !newPanelPassword) return;
+    
+    const { error } = await supabase.from('panels').insert([{
+      name: newPanelName,
+      username: newPanelUsername,
+      password: newPanelPassword
+    }]);
+
+    if (error) {
+      alert(error.message);
+    } else {
+      setNewPanelName('');
+      setNewPanelUsername('');
+      setNewPanelPassword('');
+      fetchTeams();
+    }
+  };
+
+  const handleDeletePanel = async (id, name) => {
+    if (window.confirm(`Are you sure you want to delete the panel "${name}"? This will also unassign all teams and judges from this panel.`)) {
+      await supabase.from('panels').delete().eq('id', id);
+      await supabase.from('teams').update({ r2_panel: null }).eq('r2_panel', name);
+      await supabase.from('judges').update({ panel_name: null }).eq('panel_name', name);
+      fetchTeams();
+    }
+  };
+
   const handleToggleEvaluation = async (id, currentStatus) => {
     await supabase.from('judges').update({ evaluation_enabled: !currentStatus }).eq('id', id);
+    fetchTeams();
+  };
+
+  const handleUpdateJudgePanel = async (judgeId, newPanelName) => {
+    await supabase.from('judges').update({ panel_name: newPanelName || null }).eq('id', judgeId);
+    fetchTeams();
+  };
+
+  const toggleEvalTeamExpand = (teamId) => {
+    const newSet = new Set(expandedEvalTeams);
+    if (newSet.has(teamId)) newSet.delete(teamId);
+    else newSet.add(teamId);
+    setExpandedEvalTeams(newSet);
+  };
+
+  const handleAdminOverrideEval = async (evalId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to change this evaluation to ${newStatus ? 'Selected' : 'Not Selected'}?`)) return;
+    await supabase.from('evaluations').update({ selected_status: newStatus }).eq('id', evalId);
     fetchTeams();
   };
 
@@ -715,10 +831,11 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span className="font-medium text-sm">Judges</span></div>
           </button>
 
-          <button onClick={() => setActiveTab('eval_results')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'eval_results' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
-            <div className="flex items-center gap-3"><Activity className="w-4 h-4" /><span className="font-medium text-sm">Evaluation Results</span></div>
+          <button onClick={() => setActiveTab('panels')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'panels' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
+            <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span className="font-medium text-sm">Panels</span></div>
           </button>
-          
+
+
           <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
             <div className="flex items-center gap-3"><Activity className="w-4 h-4" /><span className="font-medium text-sm">Settings</span></div>
           </button>
@@ -773,7 +890,8 @@ export default function AdminDashboard() {
                 { id: 'round3', label: 'Round 3' },
                 { id: 'roster', label: 'Team Roster' },
                 { id: 'volunteers', label: 'Volunteers' },
-                { id: 'judges', label: 'Judges' }
+                { id: 'judges', label: 'Judges' },
+                { id: 'panels', label: 'Panels' }
               ].map(tab => (
                 <button 
                   key={tab.id}
@@ -856,7 +974,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50">
                       <p className="text-[#86868b] text-sm font-semibold mb-2 flex items-center gap-2"><CreditCard className="w-4 h-4"/> Total Revenue</p>
-                      <p className="text-3xl font-bold text-blue-600">₹ {(teams.filter(t => t.payment_status === 'paid').length * 1000).toLocaleString()}</p>
+                      <p className="text-3xl font-bold text-blue-600">₹ {(teams.filter(t => t.payment_status === 'paid').length * 500).toLocaleString()}</p>
                       <p className="text-xs text-[#86868b] mt-1">Confirmed Payments</p>
                     </div>
                   </div>
@@ -1068,7 +1186,18 @@ export default function AdminDashboard() {
                       <p className="text-[#86868b]">Verify payments, evaluate live pitches, and publish results.</p>
                     </div>
                     
-                    <div className="flex bg-[#e8e8ed] p-1 rounded-full w-fit">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <select 
+                        value={r2PanelFilter}
+                        onChange={(e) => setR2PanelFilter(e.target.value)}
+                        className="px-4 py-2 bg-white border border-[#d2d2d7] rounded-xl text-sm font-medium text-[#1d1d1f] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-sm h-10"
+                      >
+                        <option value="ALL">All Panels</option>
+                        <option value="Unassigned">Unassigned Teams</option>
+                        {panels.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                      </select>
+
+                      <div className="flex bg-[#e8e8ed] p-1 rounded-full w-fit h-10 items-center">
                       <button onClick={() => setRound2SubTab('payment')} className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all ${round2SubTab === 'payment' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>
                         Payment Verifications ({r2TeamsAll.filter(t=>t.payment_status==='pending_verification').length})
                       </button>
@@ -1082,15 +1211,42 @@ export default function AdminDashboard() {
                         Disqualified
                       </button>
                     </div>
+                    </div>
                   </div>
                   
                   {round2SubTab === 'payment' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                      {selectedPaymentTeams.size > 0 && (
+                        <div className="bg-blue-50/50 border-b border-[#d2d2d7]/50 px-6 py-3 flex items-center justify-between">
+                          <span className="text-sm font-semibold text-blue-900">
+                            {selectedPaymentTeams.size} teams selected
+                          </span>
+                          <Button 
+                            onClick={handleBulkVerifyPayment}
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
+                          >
+                            <ShieldCheck className="w-4 h-4 mr-2" /> Bulk Verify
+                          </Button>
+                        </div>
+                      )}
                       <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                            <th className="py-3 px-4 w-12 text-center">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                checked={r2TeamsAll.length > 0 && selectedPaymentTeams.size === r2TeamsAll.length}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedPaymentTeams(new Set(r2TeamsAll.map(t => t.id)));
+                                  else setSelectedPaymentTeams(new Set());
+                                }}
+                              />
+                            </th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
+                            <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Contact</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">UTR Number</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Status / Action</th>
@@ -1098,10 +1254,40 @@ export default function AdminDashboard() {
                         </thead>
                         <tbody className="divide-y divide-[#d2d2d7]/50">
                           {r2TeamsAll.map(team => (
-                            <tr key={team.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                            <tr key={team.id} className={`transition-colors ${selectedPaymentTeams.has(team.id) ? 'bg-blue-50/50' : 'hover:bg-[#f5f5f7]/50'}`}>
+                              <td className="py-4 px-4 text-center">
+                                <input 
+                                  type="checkbox" 
+                                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                  checked={selectedPaymentTeams.has(team.id)}
+                                  onChange={(e) => {
+                                    const newSet = new Set(selectedPaymentTeams);
+                                    if (e.nativeEvent.shiftKey && lastSelectedPaymentTeamId) {
+                                      const currentIndex = r2TeamsAll.findIndex(t => t.id === team.id);
+                                      const lastIndex = r2TeamsAll.findIndex(t => t.id === lastSelectedPaymentTeamId);
+                                      if (currentIndex !== -1 && lastIndex !== -1) {
+                                        const start = Math.min(currentIndex, lastIndex);
+                                        const end = Math.max(currentIndex, lastIndex);
+                                        for (let i = start; i <= end; i++) {
+                                          if (e.target.checked) newSet.add(r2TeamsAll[i].id);
+                                          else newSet.delete(r2TeamsAll[i].id);
+                                        }
+                                      }
+                                    } else {
+                                      if (e.target.checked) newSet.add(team.id);
+                                      else newSet.delete(team.id);
+                                    }
+                                    setSelectedPaymentTeams(newSet);
+                                    setLastSelectedPaymentTeamId(team.id);
+                                  }}
+                                />
+                              </td>
                               <td className="py-4 px-4">
                                 <div className="font-semibold text-sm text-[#1d1d1f]">{team.team_name}</div>
                                 <div className="text-xs text-[#86868b] font-mono mt-0.5">{team.team_id}</div>
+                              </td>
+                              <td className="py-4 px-4 text-sm max-w-[200px] truncate">
+                                PS-{team.problem_statement_id}: {team.problem_statements?.title}
                               </td>
                               <td className="py-4 px-4 text-sm text-[#1d1d1f]">
                                 {team.college}
@@ -1158,7 +1344,7 @@ export default function AdminDashboard() {
                             </tr>
                           ))}
                           {r2TeamsAll.length === 0 && (
-                            <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No teams in Round 2.</td></tr>
+                            <tr><td colSpan="5" className="text-center py-12 text-[#86868b]">No teams in Round 2.</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1168,76 +1354,150 @@ export default function AdminDashboard() {
 
                   {round2SubTab === 'eval' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                      <div className="p-4 border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/30 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          <select 
+                            value={r2EvaluationFilter}
+                            onChange={(e) => setR2EvaluationFilter(e.target.value)}
+                            className="text-sm border rounded-full px-4 py-1.5 bg-white border-[#d2d2d7]"
+                          >
+                            <option value="ALL">All Teams</option>
+                            <option value="PENDING">Not Evaluated</option>
+                            <option value="SELECTED">Selected</option>
+                            <option value="NOT_SELECTED">Not Selected</option>
+                          </select>
+                          <div className="text-sm font-medium text-slate-700 whitespace-nowrap">
+                            {selectedR2Teams.size} teams selected
+                          </div>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <select 
+                              value={bulkPanelSelection} 
+                              onChange={(e) => setBulkPanelSelection(e.target.value)} 
+                              className="text-sm border rounded-full px-4 py-1.5 bg-white border-[#d2d2d7] w-full"
+                            >
+                              <option value="">Select Panel</option>
+                              <option value="Unassigned">Unassigned (Clear)</option>
+                              {panels.map(panel => (
+                                <option key={panel.id} value={panel.name}>{panel.name}</option>
+                              ))}
+                            </select>
+                          <Button 
+                            onClick={handleBulkAssignPanelR2} 
+                            disabled={!bulkPanelSelection || selectedR2Teams.size === 0}
+                            size="sm"
+                            className="rounded-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 whitespace-nowrap"
+                          >
+                            Assign Panel
+                          </Button>
+                        </div>
+                      </div>
                       <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                            <th className="py-3 px-4 w-12 text-center">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                checked={r2TeamsEvaluations.length > 0 && selectedR2Teams.size === r2TeamsEvaluations.length}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedR2Teams(new Set(r2TeamsEvaluations.map(t => t.id)));
+                                  else setSelectedR2Teams(new Set());
+                                }}
+                              />
+                            </th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
-                            <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Assigned Judge</th>
-                            <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Score</th>
+                            <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Panel</th>
+                            <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Scores & Selection</th>
                             <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#d2d2d7]/50">
                           {r2TeamsEvaluations.map(team => {
-                            const evalData = evaluations.find(ev => ev.team_id === team.id && ev.round_number === 2);
+                            const evalData = evaluations.filter(ev => ev.team_id === team.id && ev.round_number === 2);
                             return (
-                              <tr key={team.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                              <tr key={team.id} className={`transition-colors ${selectedR2Teams.has(team.id) ? 'bg-blue-50/50' : 'hover:bg-[#f5f5f7]/50'}`}>
+                                <td className="py-4 px-4 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                    checked={selectedR2Teams.has(team.id)}
+                                    onChange={(e) => {
+                                      const newSet = new Set(selectedR2Teams);
+                                      if (e.nativeEvent.shiftKey && lastSelectedTeamId) {
+                                        const currentIndex = r2TeamsEvaluations.findIndex(t => t.id === team.id);
+                                        const lastIndex = r2TeamsEvaluations.findIndex(t => t.id === lastSelectedTeamId);
+                                        if (currentIndex !== -1 && lastIndex !== -1) {
+                                          const start = Math.min(currentIndex, lastIndex);
+                                          const end = Math.max(currentIndex, lastIndex);
+                                          for (let i = start; i <= end; i++) {
+                                            if (e.target.checked) newSet.add(r2TeamsEvaluations[i].id);
+                                            else newSet.delete(r2TeamsEvaluations[i].id);
+                                          }
+                                        }
+                                      } else {
+                                        if (e.target.checked) newSet.add(team.id);
+                                        else newSet.delete(team.id);
+                                      }
+                                      setSelectedR2Teams(newSet);
+                                      setLastSelectedTeamId(team.id);
+                                    }}
+                                  />
+                                </td>
                                 <td className="py-4 px-4">
                                   <div className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
                                     {team.team_name}
                                   </div>
                                   <div className="text-xs text-[#86868b] font-mono mt-0.5">{team.team_id}</div>
                                 </td>
-                                <td className="py-4 px-4 text-sm max-w-[300px] truncate">
+                                <td className="py-4 px-4 text-sm max-w-[200px] truncate">
                                   PS-{team.problem_statement_id}: {team.problem_statements?.title}
                                 </td>
                                 <td className="py-4 px-4">
-                                  <select
-                                    className="border border-slate-200 rounded-md text-sm p-1.5 focus:ring-2 focus:ring-blue-500 w-full max-w-[150px]"
-                                    value={judgeAssignments.find(ja => ja.team_id === team.id)?.judge_id || '-'}
-                                    onChange={(e) => handleAssignJudge(team.id, e.target.value)}
-                                  >
-                                    <option value="-">Unassigned</option>
-                                    {judges.map(j => (
-                                      <option key={j.id} value={j.id}>{j.name}</option>
-                                    ))}
-                                  </select>
-                                  {evalData?.judge_id && (
-                                    <div className="text-[10px] text-slate-400 mt-1">
-                                      Graded by: {judges.find(j => j.id === evalData.judge_id)?.name || 'Unknown'}
-                                    </div>
-                                  )}
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    {team.r2_panel || 'Unassigned'}
+                                  </span>
                                 </td>
                                 <td className="py-4 px-4 text-sm font-medium">
-                                  {evalData ? (
-                                    evalData.is_absent ? <span className="text-red-500">Absent</span> : 
-                                    <span className="text-blue-600 font-bold">{evalData.total_score} / 70</span>
+                                  {evalData.length > 0 ? (
+                                    <div className="space-y-1">
+                                      {evalData.map(ev => {
+                                        const judgeName = judges.find(j => j.id === ev.judge_id)?.name || 'Unknown';
+                                        return (
+                                          <div key={ev.id} className="flex items-center gap-2 text-xs">
+                                            <span className="text-slate-500 w-20 truncate">{judgeName}:</span>
+                                            {ev.is_absent ? <span className="text-red-500">Absent</span> : <span className="text-blue-600 font-bold">{ev.total_score} / 70</span>}
+                                            {ev.selected_status ? <span className="text-emerald-600 font-bold ml-1">(Selected)</span> : <span className="text-rose-500 font-bold ml-1">(Rejected)</span>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   ) : <span className="text-slate-400">Not Graded</span>}
                                 </td>
                                 <td className="py-4 px-4 text-right">
                                   <Button size="sm" onClick={() => {
                                     setIsGrading(team);
                                     setGradeData({
-                                      ps_fit: evalData?.ps_fit || 5,
-                                      ai_depth: evalData?.ai_depth || 5,
-                                      tech_impl: evalData?.tech_impl || 5,
-                                      innovation: evalData?.innovation || 5,
-                                      impact: evalData?.impact || 5,
-                                      business: evalData?.business || 5,
-                                      presentation: evalData?.presentation || 5,
-                                      absent: evalData?.is_absent || false
+                                      ps_fit: 5,
+                                      ai_depth: 5,
+                                      tech_impl: 5,
+                                      innovation: 5,
+                                      impact: 5,
+                                      business: 5,
+                                      presentation: 5,
+                                      absent: false
                                     });
-                                  }} className="bg-slate-800 hover:bg-slate-900 text-white rounded-full shadow-sm text-xs px-4">
-                                    {evalData ? 'Edit Grade' : 'Grade Team'}
+                                  }} className="bg-slate-800 hover:bg-slate-900 text-white rounded-full shadow-sm text-xs px-4 whitespace-nowrap">
+                                    Grade as Admin
                                   </Button>
                                 </td>
                               </tr>
                             );
                           })}
                           {r2TeamsEvaluations.length === 0 && (
-                            <tr><td colSpan="5" className="text-center py-12 text-[#86868b]">No teams are ready for evaluation yet.</td></tr>
+                            <tr><td colSpan="6" className="text-center py-12 text-[#86868b]">No teams are ready for evaluation yet.</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1273,8 +1533,11 @@ export default function AdminDashboard() {
                       
                       <div className="space-y-2">
                         {evaluatedR2Teams.map(team => {
-                          const evalData = evaluations.find(ev => ev.team_id === team.id && ev.round_number === 2);
+                          const allEvals = evaluations.filter(ev => ev.team_id === team.id && ev.round_number === 2);
                           const isSelected = selectedToPublish.includes(team.id);
+                          const allSelectedStatus = allEvals.every(e => e.selected_status === true);
+                          const allRejectedStatus = allEvals.every(e => e.selected_status === false);
+                          
                           return (
                             <div key={team.id} className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-colors ${isSelected ? 'border-purple-500 bg-purple-50' : 'border-slate-200 hover:border-purple-300'}`} onClick={() => {
                               setSelectedToPublish(prev => isSelected ? prev.filter(id => id !== team.id) : [...prev, team.id]);
@@ -1284,15 +1547,17 @@ export default function AdminDashboard() {
                               </div>
                               <div className="flex-1">
                                 <h4 className="font-bold text-sm">{team.team_name} <span className="font-normal text-slate-500 text-xs ml-2">{team.team_id}</span></h4>
+                                <div className="text-xs text-slate-500 mt-1">{allEvals.length} Evaluation{allEvals.length > 1 ? 's' : ''}</div>
                               </div>
-                              <div className="text-right">
-                                {evalData.is_absent ? (
-                                  <span className="text-red-600 font-bold text-sm">ABSENT</span>
-                                ) : (
-                                  <span className="font-bold text-lg text-blue-600">{evalData.total_score} <span className="text-sm font-normal text-slate-500">/ 70</span></span>
-                                )}
+                              <div className="text-right flex items-center gap-4">
+                                {allSelectedStatus && <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold uppercase">Judges: Selected</span>}
+                                {allRejectedStatus && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold uppercase">Judges: Not Selected</span>}
+                                {!allSelectedStatus && !allRejectedStatus && <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded text-xs font-bold uppercase">Judges: Mixed</span>}
+                                <span className="font-bold text-lg text-blue-600">
+                                  {Math.round(allEvals.reduce((sum, e) => sum + (e.total_score || 0), 0) / allEvals.length)} <span className="text-sm font-normal text-slate-500">avg / 70</span>
+                                </span>
                               </div>
-                              {evalData.is_published && (
+                              {allEvals.some(e => e.is_published) && (
                                 <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Published</span>
                               )}
                             </div>
@@ -1623,6 +1888,19 @@ export default function AdminDashboard() {
                             <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Password</label>
                             <Input placeholder="Password" value={newJudgePassword} onChange={e => setNewJudgePassword(e.target.value)} required className="w-full" />
                           </div>
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Panel</label>
+                            <select
+                              value={newJudgePanel}
+                              onChange={e => setNewJudgePanel(e.target.value)}
+                              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+                            >
+                              <option value="">No Panel</option>
+                              {panels.map(panel => (
+                                <option key={panel.id} value={panel.name}>{panel.name}</option>
+                              ))}
+                            </select>
+                          </div>
                           <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Create Account</Button>
                         </form>
                       </div>
@@ -1635,6 +1913,7 @@ export default function AdminDashboard() {
                           <thead>
                             <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
                               <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Name</th>
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Panel</th>
                               <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Email & Password</th>
                               <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Actions</th>
                             </tr>
@@ -1643,6 +1922,18 @@ export default function AdminDashboard() {
                             {judges.map(judge => (
                               <tr key={judge.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
                                 <td className="py-4 px-6 font-semibold text-[#1d1d1f]">{judge.name}</td>
+                                <td className="py-4 px-6 text-sm text-[#1d1d1f]">
+                                  <select
+                                    value={judge.panel_name || ''}
+                                    onChange={(e) => handleUpdateJudgePanel(judge.id, e.target.value)}
+                                    className="flex h-8 w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+                                  >
+                                    <option value="">No Panel</option>
+                                    {panels.map(panel => (
+                                      <option key={panel.id} value={panel.name}>{panel.name}</option>
+                                    ))}
+                                  </select>
+                                </td>
                                 <td className="py-4 px-6 text-sm text-[#1d1d1f]">
                                   <div>{judge.email}</div>
                                   <div className="text-slate-500 font-mono text-xs mt-1">pwd: {judge.password}</div>
@@ -1665,7 +1956,77 @@ export default function AdminDashboard() {
                               </tr>
                             ))}
                             {judges.length === 0 && (
-                              <tr><td colSpan="3" className="text-center py-12 text-[#86868b]">No judges created yet.</td></tr>
+                              <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No judges created yet.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* PANELS TAB */}
+              {activeTab === 'panels' && (
+                <motion.div key="panels_tab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h1 className="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Panel Management</h1>
+                      <p className="text-[#86868b]">Create and manage evaluation panels for Round 2.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-1">
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#d2d2d7]/50">
+                        <h3 className="font-bold text-[#1d1d1f] mb-4">Add Panel</h3>
+                        <form onSubmit={handleAddPanel} className="space-y-4">
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Panel Name</label>
+                            <Input placeholder="e.g., Panel A" value={newPanelName} onChange={e => setNewPanelName(e.target.value)} required className="w-full" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Username</label>
+                            <Input placeholder="Panel Username" value={newPanelUsername} onChange={e => setNewPanelUsername(e.target.value)} required className="w-full" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold text-[#86868b] uppercase tracking-widest mb-1 block">Password</label>
+                            <Input placeholder="Password" value={newPanelPassword} onChange={e => setNewPanelPassword(e.target.value)} required className="w-full" />
+                          </div>
+                          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Create Panel</Button>
+                        </form>
+                      </div>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <div className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Panel Name</th>
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Credentials</th>
+                              <th className="py-3 px-6 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#d2d2d7]/50">
+                            {panels.map(panel => (
+                              <tr key={panel.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                                <td className="py-4 px-6 font-semibold text-[#1d1d1f]">{panel.name}</td>
+                                <td className="py-4 px-6 text-sm text-[#1d1d1f]">
+                                  <div>User: {panel.username}</div>
+                                  <div className="text-slate-500 font-mono text-xs mt-1">pwd: {panel.password}</div>
+                                </td>
+                                <td className="py-4 px-6 text-right">
+                                  <Button size="sm" variant="outline" onClick={() => handleDeletePanel(panel.id, panel.name)} className="text-red-600 border-red-200 hover:bg-red-50">
+                                    Delete
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                            {panels.length === 0 && (
+                              <tr><td colSpan="3" className="text-center py-12 text-[#86868b]">No panels created yet.</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -1750,51 +2111,130 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#d2d2d7]/50">
-                        {evaluations.filter(e => {
-                          if (e.round_number !== (evalSubTab === 'r1' ? 1 : 2)) return false;
-                          if (evalFilterJudge !== 'ALL' && e.judge_id !== evalFilterJudge) return false;
-                          if (evalFilterVerdict === 'selected' && e.selected_status !== true) return false;
-                          if (evalFilterVerdict === 'not_selected' && e.selected_status !== false) return false;
-                          const team = teams.find(t => t.id === e.team_id);
-                          if (evalFilterPS !== 'ALL' && team && team.problem_statement_id !== parseInt(evalFilterPS)) return false;
-                          return true;
-                        }).map(ev => {
-                          const team = teams.find(t => t.id === ev.team_id);
-                          const judge = judges.find(j => j.id === ev.judge_id);
-                          return (
-                            <tr key={ev.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                              <td className="py-4 px-4">
-                                <div className="font-semibold text-sm text-[#1d1d1f]">{team?.team_name || 'Unknown'}</div>
-                                <div className="text-xs text-[#86868b] font-mono mt-0.5">{team?.team_id}</div>
-                              </td>
-                              <td className="py-4 px-4 font-medium text-sm text-[#1d1d1f]">
-                                {judge?.name || 'Unknown Judge'}
-                              </td>
-                              <td className="py-4 px-4 text-sm text-[#1d1d1f]">
-                                {evalSubTab === 'r1' ? (
-                                  <div className="flex gap-3 text-xs flex-wrap">
-                                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded" title="Problem Relevance & Clarity">Rel: {ev.impact || '-'}</span>
-                                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded" title="Innovation and Originality">Inn: {ev.innovation || '-'}</span>
-                                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded" title="Solution approach and Technical Feasibility">Tech: {ev.tech_impl || '-'}</span>
-                                    <span className="bg-pink-50 text-pink-700 px-2 py-1 rounded" title="Impact and Scalability">Imp: {ev.business || '-'}</span>
-                                    <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded" title="User Centricity and Usability">Usr: {ev.presentation || '-'}</span>
-                                    <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded font-bold">Tot: {ev.total_score || '-'}</span>
-                                  </div>
-                                ) : (
-                                  <div className="font-bold">Total: {ev.total_score || '-'}</div>
+                        {(() => {
+                          const currentRoundNum = evalSubTab === 'r1' ? 1 : 2;
+                          const teamGroups = {};
+                          evaluations.filter(e => e.round_number === currentRoundNum).forEach(ev => {
+                            if (!teamGroups[ev.team_id]) teamGroups[ev.team_id] = [];
+                            teamGroups[ev.team_id].push(ev);
+                          });
+
+                          const filteredTeamGroups = Object.entries(teamGroups).filter(([teamId, evs]) => {
+                            if (evalFilterJudge !== 'ALL' && !evs.some(e => e.judge_id === evalFilterJudge)) return false;
+                            
+                            const allSelected = evs.every(e => e.selected_status === true);
+                            const allNotSelected = evs.every(e => e.selected_status === false);
+                            const consolidated = allSelected ? 'selected' : (allNotSelected ? 'not_selected' : 'mixed');
+                            
+                            if (evalFilterVerdict === 'selected' && consolidated !== 'selected') return false;
+                            if (evalFilterVerdict === 'not_selected' && consolidated !== 'not_selected') return false;
+                            
+                            const team = teams.find(t => t.id === teamId);
+                            if (evalFilterPS !== 'ALL' && team && team.problem_statement_id !== parseInt(evalFilterPS)) return false;
+                            
+                            return true;
+                          });
+
+                          if (filteredTeamGroups.length === 0) {
+                            return <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No evaluations match your filters.</td></tr>;
+                          }
+
+                          return filteredTeamGroups.map(([teamId, evs]) => {
+                            const team = teams.find(t => t.id === teamId);
+                            const allSelected = evs.every(e => e.selected_status === true);
+                            const allNotSelected = evs.every(e => e.selected_status === false);
+                            const isMixed = !allSelected && !allNotSelected;
+                            const isExpanded = expandedEvalTeams.has(teamId);
+
+                            return (
+                              <React.Fragment key={teamId}>
+                                <tr className="hover:bg-[#f5f5f7]/50 transition-colors cursor-pointer" onClick={() => toggleEvalTeamExpand(teamId)}>
+                                  <td className="py-4 px-4">
+                                    <div className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
+                                      {team?.team_name || 'Unknown'}
+                                      <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full font-bold border border-slate-200">
+                                        {evs.length} EVAL{evs.length > 1 ? 'S' : ''}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-[#86868b] font-mono mt-0.5">{team?.team_id}</div>
+                                  </td>
+                                  <td colSpan="2" className="py-4 px-4 text-xs text-slate-500 italic">
+                                    Click row to view {evs.length} judge score{evs.length > 1 ? 's' : ''}
+                                  </td>
+                                  <td className="py-4 px-4 text-right">
+                                    {allSelected && <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold uppercase">Selected</span>}
+                                    {allNotSelected && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold uppercase">Not Selected</span>}
+                                    {isMixed && <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded text-xs font-bold uppercase">Yet to be decided</span>}
+                                  </td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr className="bg-[#f5f5f7]/30">
+                                    <td colSpan="4" className="px-4 py-4">
+                                      <div className="bg-white rounded-xl border border-[#d2d2d7]/50 shadow-sm overflow-hidden">
+                                        <table className="w-full text-left">
+                                          <thead className="bg-slate-50 border-b border-[#d2d2d7]/50">
+                                            <tr>
+                                              <th className="py-2 px-4 text-[10px] font-semibold text-slate-500 uppercase">Judge/Panel</th>
+                                              <th className="py-2 px-4 text-[10px] font-semibold text-slate-500 uppercase">Scores</th>
+                                              <th className="py-2 px-4 text-[10px] font-semibold text-slate-500 uppercase text-right">Verdict</th>
+                                              <th className="py-2 px-4 text-[10px] font-semibold text-slate-500 uppercase text-center w-32">Action</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-slate-100">
+                                            {evs.map(ev => {
+                                              const judge = judges.find(j => j.id === ev.judge_id);
+                                              const panel = panels.find(p => p.id === ev.judge_id);
+                                              const evalName = judge?.name || panel?.name || 'Unknown Evaluator';
+                                              return (
+                                                <tr key={ev.id} className="hover:bg-slate-50 transition-colors">
+                                                  <td className="py-3 px-4 text-xs font-medium text-slate-700">{evalName}</td>
+                                                  <td className="py-3 px-4 text-xs">
+                                                    {evalSubTab === 'r1' ? (
+                                                      <div className="flex gap-2 flex-wrap">
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Problem Relevance & Clarity">Rel: {ev.impact || '-'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Innovation and Originality">Inn: {ev.innovation || '-'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Solution approach and Technical Feasibility">Tech: {ev.tech_impl || '-'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Impact and Scalability">Imp: {ev.business || '-'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="User Centricity and Usability">Usr: {ev.presentation || '-'}</span>
+                                                        <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">Tot: {ev.total_score || '-'}</span>
+                                                      </div>
+                                                    ) : (
+                                                      <span className="font-bold bg-slate-100 px-2 py-1 rounded">Total: {ev.total_score || '-'}</span>
+                                                    )}
+                                                  </td>
+                                                  <td className="py-3 px-4 text-right text-xs">
+                                                    {ev.selected_status === true && <span className="text-green-600 font-bold uppercase">Selected</span>}
+                                                    {ev.selected_status === false && <span className="text-red-600 font-bold uppercase">Not Selected</span>}
+                                                    {ev.selected_status === null && <span className="text-slate-400 italic">Pending</span>}
+                                                  </td>
+                                                  <td className="py-3 px-4 text-center">
+                                                    <select 
+                                                      className="text-[10px] border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
+                                                      value={ev.selected_status === true ? 'selected' : (ev.selected_status === false ? 'not_selected' : '')}
+                                                      onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val) handleAdminOverrideEval(ev.id, val === 'selected');
+                                                      }}
+                                                      onClick={e => e.stopPropagation()}
+                                                    >
+                                                      <option value="" disabled>Change...</option>
+                                                      <option value="selected">Make Selected</option>
+                                                      <option value="not_selected">Make Not Selected</option>
+                                                    </select>
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </td>
+                                  </tr>
                                 )}
-                              </td>
-                              <td className="py-4 px-4 text-right">
-                                {ev.selected_status === true && <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold uppercase">Selected</span>}
-                                {ev.selected_status === false && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold uppercase">Not Selected</span>}
-                                {ev.selected_status === null && <span className="text-slate-400 text-xs italic">Pending</span>}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        {evaluations.filter(e => e.round_number === (evalSubTab === 'r1' ? 1 : 2)).length === 0 && (
-                          <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No evaluations recorded for this round yet.</td></tr>
-                        )}
+                              </React.Fragment>
+                            );
+                          });
+                        })()}
                       </tbody>
                     </table>
                     </div>

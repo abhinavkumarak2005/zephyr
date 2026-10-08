@@ -10,6 +10,8 @@ import VolunteerAuth from './pages/VolunteerAuth'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import JudgeAuth from './pages/JudgeAuth'
 import JudgeDashboard from './pages/JudgeDashboard'
+import PanelAuth from './pages/PanelAuth'
+import PanelDashboard from './pages/PanelDashboard'
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
           <Route path="/volunteer" element={<VolunteerDashboard />} />
           <Route path="/judge-login" element={<JudgeAuth />} />
           <Route path="/judge" element={<JudgeDashboard />} />
+          <Route path="/panel-login" element={<PanelAuth />} />
+          <Route path="/panel-dashboard" element={<PanelDashboard />} />
         </Routes>
       </BrowserRouter>
     </ReactLenis>
