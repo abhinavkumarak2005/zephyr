@@ -48,6 +48,7 @@ export default function AdminDashboard() {
   const [evalFilterJudge, setEvalFilterJudge] = useState('ALL');
   const [evalFilterVerdict, setEvalFilterVerdict] = useState('ALL');
   const [evalFilterPS, setEvalFilterPS] = useState('ALL');
+  const [evalFilterPanel, setEvalFilterPanel] = useState('ALL');
 
   // Notice State
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
@@ -835,6 +836,9 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span className="font-medium text-sm">Panels</span></div>
           </button>
 
+          <button onClick={() => setActiveTab('eval_results')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'eval_results' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
+            <div className="flex items-center gap-3"><Activity className="w-4 h-4" /><span className="font-medium text-sm">Evaluation Results</span></div>
+          </button>
 
           <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'text-[#1d1d1f] hover:bg-[#e8e8ed]'}`}>
             <div className="flex items-center gap-3"><Activity className="w-4 h-4" /><span className="font-medium text-sm">Settings</span></div>
@@ -891,7 +895,8 @@ export default function AdminDashboard() {
                 { id: 'roster', label: 'Team Roster' },
                 { id: 'volunteers', label: 'Volunteers' },
                 { id: 'judges', label: 'Judges' },
-                { id: 'panels', label: 'Panels' }
+                { id: 'panels', label: 'Panels' },
+                { id: 'eval_results', label: 'Evaluations' }
               ].map(tab => (
                 <button 
                   key={tab.id}
@@ -2083,6 +2088,13 @@ export default function AdminDashboard() {
                       <button onClick={() => setEvalSubTab('r2')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${evalSubTab === 'r2' ? 'bg-white text-blue-600 shadow-sm' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>Round 2 Evaluations</button>
                     </div>
                     <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                      {evalSubTab === 'r2' && (
+                        <select className="text-sm border rounded-xl px-3 py-1.5 bg-white border-[#d2d2d7] focus:outline-none" value={evalFilterPanel} onChange={e => setEvalFilterPanel(e.target.value)}>
+                          <option value="ALL">All Panels</option>
+                          <option value="Unassigned">Unassigned Teams</option>
+                          {panels.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                        </select>
+                      )}
                       <select className="text-sm border rounded-xl px-3 py-1.5 bg-white border-[#d2d2d7] focus:outline-none" value={evalFilterJudge} onChange={e => setEvalFilterJudge(e.target.value)}>
                         <option value="ALL">All Judges</option>
                         {judges.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
@@ -2131,6 +2143,11 @@ export default function AdminDashboard() {
                             
                             const team = teams.find(t => t.id === teamId);
                             if (evalFilterPS !== 'ALL' && team && team.problem_statement_id !== parseInt(evalFilterPS)) return false;
+                            
+                            if (evalSubTab === 'r2' && evalFilterPanel !== 'ALL') {
+                              if (evalFilterPanel === 'Unassigned' && team?.r2_panel) return false;
+                              if (evalFilterPanel !== 'Unassigned' && team?.r2_panel !== evalFilterPanel) return false;
+                            }
                             
                             return true;
                           });

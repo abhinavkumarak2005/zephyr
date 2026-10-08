@@ -361,7 +361,7 @@ export default function PanelDashboard() {
                   <p className="text-[#86868b]">View the judges assigned to your panel and their credentials.</p>
                 </div>
                 <Button 
-                  onClick={() => window.open('/judge/login', '_blank')}
+                  onClick={() => window.open('/judge-login', '_blank')}
                   className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm"
                 >
                   <LinkIcon className="w-4 h-4 mr-2" /> Open Judge Login
