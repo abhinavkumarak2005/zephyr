@@ -403,12 +403,12 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
 
                   {paymentStatus === 'paid' && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                      <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4">
                         <CheckCircle2 className="w-8 h-8" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Round 2 Completed</h3>
-                      <p className="text-slate-500 max-w-sm mb-4">
-                        Your payment was verified and you have completed the live presentation.
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">Payment Verified</h3>
+                      <p className="text-slate-500 max-w-sm mb-4 leading-relaxed">
+                        Your payment has been successfully verified. The following details for your Round 2 presentation will be communicated soon.
                       </p>
                       
                       {evaluation?.is_published && currentRound === 2 && (
