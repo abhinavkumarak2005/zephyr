@@ -126,11 +126,11 @@ export default function JudgeDashboard() {
         setEvalForm({
           team_id: team.id,
           round_number: 2,
-          innovation: team.evalData?.innovation || 3,
-          tech_impl: team.evalData?.tech_impl || 3,
-          impact: team.evalData?.impact || 3,
-          business: team.evalData?.business || 3,
-          presentation: team.evalData?.presentation || 3,
+          innovation: team.evalData?.innovation !== undefined ? team.evalData.innovation : (round === 2 ? '' : 3),
+          tech_impl: team.evalData?.tech_impl !== undefined ? team.evalData.tech_impl : (round === 2 ? '' : 3),
+          impact: team.evalData?.impact !== undefined ? team.evalData.impact : (round === 2 ? '' : 3),
+          business: team.evalData?.business !== undefined ? team.evalData.business : (round === 2 ? '' : 3),
+          presentation: team.evalData?.presentation !== undefined ? team.evalData.presentation : (round === 2 ? '' : 3),
           selected_status: team.evalData?.selected_status || false
         });
       }
@@ -158,11 +158,11 @@ export default function JudgeDashboard() {
       setEvalForm({
         team_id: selectedTeamId,
         round_number: roundNumber,
-        innovation: team.evalData?.innovation || 3,
-        tech_impl: team.evalData?.tech_impl || 3,
-        impact: team.evalData?.impact || 3,
-        business: team.evalData?.business || 3,
-        presentation: team.evalData?.presentation || 3,
+        innovation: team.evalData?.innovation !== undefined ? team.evalData.innovation : (roundNumber === 2 ? '' : 3),
+        tech_impl: team.evalData?.tech_impl !== undefined ? team.evalData.tech_impl : (roundNumber === 2 ? '' : 3),
+        impact: team.evalData?.impact !== undefined ? team.evalData.impact : (roundNumber === 2 ? '' : 3),
+        business: team.evalData?.business !== undefined ? team.evalData.business : (roundNumber === 2 ? '' : 3),
+        presentation: team.evalData?.presentation !== undefined ? team.evalData.presentation : (roundNumber === 2 ? '' : 3),
         selected_status: team.evalData?.selected_status || false
       });
     } else {
@@ -451,6 +451,7 @@ export default function JudgeDashboard() {
                         <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
                         <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
                         <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Members</th>
+                        <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-center">Presentation</th>
                         <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Details</th>
                       </tr>
                     </thead>
@@ -485,6 +486,15 @@ export default function JudgeDashboard() {
                                 </div>
                               )}
                             </td>
+                            <td className="py-4 px-4 text-center">
+                              {team.presentation_link ? (
+                                <a href={team.presentation_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-colors border border-blue-200">
+                                  <ExternalLink className="w-3.5 h-3.5" /> View
+                                </a>
+                              ) : (
+                                <span className="text-xs text-[#86868b] italic">Not Submitted</span>
+                              )}
+                            </td>
                             <td className="py-4 px-4 text-right">
                               <Button size="sm" onClick={() => toggleExpand(`r2-${team.id}`, team, 2)} variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-full shadow-sm text-xs px-4">
                                 {expandedTeams.has(`r2-${team.id}`) ? 'Hide' : 'Evaluate'}
@@ -493,43 +503,66 @@ export default function JudgeDashboard() {
                           </tr>
                           {expandedTeams.has(`r2-${team.id}`) && (
                             <tr className="bg-[#f5f5f7]/30">
-                              <td colSpan="4" className="px-4 py-6">
+                              <td colSpan="5" className="px-4 py-6">
                                 <div className="bg-white p-6 rounded-xl border border-[#d2d2d7]/50 shadow-sm">
-                                  {team.presentation_link && (
-                                    <div className="mb-6 pb-4 border-b border-gray-100">
-                                      <h4 className="text-sm font-semibold text-[#1d1d1f] mb-2">Presentation</h4>
-                                      <a href={team.presentation_link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm flex items-center gap-1">
-                                        View Presentation Link <ExternalLink className="w-3 h-3" />
-                                      </a>
-                                    </div>
-                                  )}
-                                  
                                   <h4 className="text-sm font-semibold text-[#1d1d1f] mb-4">Evaluate Team</h4>
                                   <form onSubmit={(e) => { e.preventDefault(); handleEvalSubmit(e); toggleExpand(`r2-${team.id}`); }} className="space-y-5">
                                     <div className="space-y-3">
                                       {[
-                                        { key: 'impact', label: 'Problem Relevance & Clarity' },
-                                        { key: 'innovation', label: 'Innovation and Originality' },
-                                        { key: 'tech_impl', label: 'Solution approach and Technical Feasibility' },
-                                        { key: 'business', label: 'Impact and Scalability' },
-                                        { key: 'presentation', label: 'User Centricity and Usability' }
+                                        { key: 'innovation', label: 'System Architecture & Clarity', max: 15 },
+                                        { key: 'tech_impl', label: 'Coding Progress & Cleverness', max: 40 },
+                                        { key: 'impact', label: 'Real Need for Tech & Social Impact', max: 20 },
+                                        { key: 'business', label: 'Validation & Verification', max: 15 },
+                                        { key: 'presentation', label: 'Feasibility & Cost-Effectiveness', max: 10 }
                                       ].map(criteria => (
-                                        <div key={criteria.key} className="grid grid-cols-1 sm:grid-cols-[280px_1fr] md:grid-cols-[300px_1fr] items-center gap-2">
-                                          <label className="text-sm font-semibold text-[#1d1d1f]">{criteria.label}</label>
-                                          <div className="flex gap-2">
-                                            {[1,2,3,4,5].map(score => (
-                                              <button
-                                                type="button"
-                                                key={score}
-                                                onClick={() => setEvalForm({...evalForm, [criteria.key]: score, team_id: team.id, round_number: 2})}
-                                                className={`w-8 h-8 rounded-full font-bold transition-all text-sm flex items-center justify-center shrink-0 ${evalForm[criteria.key] === score && evalForm.team_id === team.id ? 'bg-blue-600 text-white shadow-md' : 'bg-[#f5f5f7] text-[#86868b] hover:bg-[#e8e8ed]'}`}
-                                              >
-                                                {score}
-                                              </button>
-                                            ))}
+                                        <div key={criteria.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 border-b border-[#f5f5f7] pb-3 pt-1 last:border-0 last:pb-0">
+                                          <label className="text-sm font-semibold text-[#1d1d1f] flex-1 break-words">
+                                            {criteria.label}
+                                          </label>
+                                          <div className="flex gap-3 items-center shrink-0">
+                                            <span className="text-[#86868b] text-xs font-mono w-20 text-right">(Max {criteria.max})</span>
+                                            <input 
+                                              type="number"
+                                              min="0"
+                                              max={criteria.max}
+                                              value={evalForm.team_id === team.id ? evalForm[criteria.key] : team.evalData?.[criteria.key] || ''}
+                                              onChange={(e) => {
+                                                let val = parseInt(e.target.value);
+                                                if (isNaN(val)) val = '';
+                                                else if (val > criteria.max) val = criteria.max;
+                                                else if (val < 0) val = 0;
+                                                setEvalForm({...evalForm, [criteria.key]: val, team_id: team.id, round_number: 2});
+                                              }}
+                                              onFocus={() => {
+                                                if (evalForm.team_id !== team.id) {
+                                                  setEvalForm({
+                                                    team_id: team.id,
+                                                    round_number: 2,
+                                                    innovation: team.evalData?.innovation || 0,
+                                                    tech_impl: team.evalData?.tech_impl || 0,
+                                                    impact: team.evalData?.impact || 0,
+                                                    business: team.evalData?.business || 0,
+                                                    presentation: team.evalData?.presentation || 0,
+                                                    selected_status: team.evalData?.selected_status || false
+                                                  });
+                                                }
+                                              }}
+                                              className="border border-[#d2d2d7] rounded-lg px-3 py-1.5 text-sm w-24 text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-[#f5f5f7] focus:bg-white transition-all font-semibold"
+                                              placeholder="0"
+                                            />
                                           </div>
                                         </div>
                                       ))}
+                                    </div>
+
+                                    <div className="mt-4 pt-4 border-t border-[#d2d2d7]/50 flex justify-between items-center bg-[#f5f5f7]/50 p-4 rounded-xl border border-[#d2d2d7]/30">
+                                      <span className="font-bold text-[#1d1d1f] uppercase tracking-wider text-sm">Total Score</span>
+                                      <span className="font-bold text-2xl text-blue-600 font-mono">
+                                        {evalForm.team_id === team.id 
+                                          ? (parseInt(evalForm.innovation) || 0) + (parseInt(evalForm.tech_impl) || 0) + (parseInt(evalForm.impact) || 0) + (parseInt(evalForm.business) || 0) + (parseInt(evalForm.presentation) || 0)
+                                          : (parseInt(team.evalData?.innovation) || 0) + (parseInt(team.evalData?.tech_impl) || 0) + (parseInt(team.evalData?.impact) || 0) + (parseInt(team.evalData?.business) || 0) + (parseInt(team.evalData?.presentation) || 0)
+                                        } <span className="text-sm text-[#86868b]">/ 100</span>
+                                      </span>
                                     </div>
                                     
                                     <div className="pt-4 border-t border-[#d2d2d7]/50 mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -568,7 +601,7 @@ export default function JudgeDashboard() {
                         </React.Fragment>
                       ))}
                       {panelTeams.length === 0 && (
-                        <tr><td colSpan="4" className="text-center py-12 text-[#86868b]">No teams assigned to your panel yet.</td></tr>
+                        <tr><td colSpan="5" className="text-center py-12 text-[#86868b]">No teams assigned to your panel yet.</td></tr>
                       )}
                     </tbody>
                   </table>
