@@ -461,8 +461,11 @@ export default function AdminDashboard() {
   };
 
   const calculateTotalScore = (data) => {
-    return Number(data.ps_fit) + Number(data.ai_depth) + Number(data.tech_impl) + Number(data.innovation) + 
-           Number(data.impact) + Number(data.business) + Number(data.presentation);
+    return (Number(data.innovation) || 0) + 
+           (Number(data.tech_impl) || 0) + 
+           (Number(data.impact) || 0) + 
+           (Number(data.business) || 0) + 
+           (Number(data.presentation) || 0);
   };
 
   const handleSaveEvaluation = async (e) => {
@@ -474,13 +477,11 @@ export default function AdminDashboard() {
       team_id: isGrading.id,
       round_number: 2,
       is_absent: gradeData.absent,
-      ps_fit: gradeData.absent ? null : gradeData.ps_fit,
-      ai_depth: gradeData.absent ? null : gradeData.ai_depth,
-      tech_impl: gradeData.absent ? null : gradeData.tech_impl,
-      innovation: gradeData.absent ? null : gradeData.innovation,
-      impact: gradeData.absent ? null : gradeData.impact,
-      business: gradeData.absent ? null : gradeData.business,
-      presentation: gradeData.absent ? null : gradeData.presentation,
+      tech_impl: gradeData.absent ? null : (Number(gradeData.tech_impl) || 0),
+      innovation: gradeData.absent ? null : (Number(gradeData.innovation) || 0),
+      impact: gradeData.absent ? null : (Number(gradeData.impact) || 0),
+      business: gradeData.absent ? null : (Number(gradeData.business) || 0),
+      presentation: gradeData.absent ? null : (Number(gradeData.presentation) || 0),
       total_score: gradeData.absent ? null : calculateTotalScore(gradeData)
     };
 
@@ -1471,10 +1472,31 @@ export default function AdminDashboard() {
                                       {evalData.map(ev => {
                                         const judgeName = judges.find(j => j.id === ev.judge_id)?.name || 'Unknown';
                                         return (
-                                          <div key={ev.id} className="flex items-center gap-2 text-xs">
-                                            <span className="text-slate-500 w-20 truncate">{judgeName}:</span>
-                                            {ev.is_absent ? <span className="text-red-500">Absent</span> : <span className="text-blue-600 font-bold">{ev.total_score} / 70</span>}
-                                            {ev.selected_status ? <span className="text-emerald-600 font-bold ml-1">(Selected)</span> : <span className="text-rose-500 font-bold ml-1">(Rejected)</span>}
+                                          <div key={ev.id} className="flex flex-col gap-0.5 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="text-slate-700 font-semibold truncate">{judgeName}</span>
+                                              <div className="flex items-center gap-1.5 shrink-0">
+                                                {ev.is_absent ? (
+                                                  <span className="text-red-500 font-bold">Absent</span>
+                                                ) : (
+                                                  <span className="text-blue-600 font-bold">{ev.total_score} / 100</span>
+                                                )}
+                                                {ev.selected_status ? (
+                                                  <span className="text-emerald-600 font-bold">(Selected)</span>
+                                                ) : (
+                                                  <span className="text-rose-500 font-bold">(Not Selected)</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            {!ev.is_absent && (
+                                              <div className="text-[11px] text-slate-500">
+                                                Arch: <span className="font-semibold text-slate-700">{ev.innovation ?? 0}</span>/15 &bull; 
+                                                Code: <span className="font-semibold text-slate-700">{ev.tech_impl ?? 0}</span>/40 &bull; 
+                                                Impact: <span className="font-semibold text-slate-700">{ev.impact ?? 0}</span>/20 &bull; 
+                                                Val: <span className="font-semibold text-slate-700">{ev.business ?? 0}</span>/15 &bull; 
+                                                Feas: <span className="font-semibold text-slate-700">{ev.presentation ?? 0}</span>/10
+                                              </div>
+                                            )}
                                           </div>
                                         );
                                       })}
@@ -1485,13 +1507,11 @@ export default function AdminDashboard() {
                                   <Button size="sm" onClick={() => {
                                     setIsGrading(team);
                                     setGradeData({
-                                      ps_fit: 5,
-                                      ai_depth: 5,
-                                      tech_impl: 5,
-                                      innovation: 5,
-                                      impact: 5,
-                                      business: 5,
-                                      presentation: 5,
+                                      innovation: 0,
+                                      tech_impl: 0,
+                                      impact: 0,
+                                      business: 0,
+                                      presentation: 0,
                                       absent: false
                                     });
                                   }} className="bg-slate-800 hover:bg-slate-900 text-white rounded-full shadow-sm text-xs px-4 whitespace-nowrap">
@@ -2216,7 +2236,14 @@ export default function AdminDashboard() {
                                                         <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">Tot: {ev.total_score || '-'}</span>
                                                       </div>
                                                     ) : (
-                                                      <span className="font-bold bg-slate-100 px-2 py-1 rounded">Total: {ev.total_score || '-'}</span>
+                                                      <div className="flex gap-2 flex-wrap">
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="System Architecture & Clarity (Max 15)">Sys: {ev.innovation ?? '0'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Coding Progress & Cleverness (Max 40)">Code: {ev.tech_impl ?? '0'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Real Need for Tech & Social Impact (Max 20)">Imp: {ev.impact ?? '0'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Validation & Verification (Max 15)">Val: {ev.business ?? '0'}</span>
+                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600" title="Feasibility & Cost-Effectiveness (Max 10)">Feas: {ev.presentation ?? '0'}</span>
+                                                        <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">Tot: {ev.total_score ?? '0'}/100</span>
+                                                      </div>
                                                     )}
                                                   </td>
                                                   <td className="py-3 px-4 text-right text-xs">
@@ -2338,30 +2365,30 @@ export default function AdminDashboard() {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                       {[
-                        { key: 'ps_fit', label: 'Problem-Solution Fit' },
-                        { key: 'ai_depth', label: 'AI Integration Depth' },
-                        { key: 'tech_impl', label: 'Technical Implementation' },
-                        { key: 'innovation', label: 'Innovation & Creativity' },
-                        { key: 'impact', label: 'Impact & Scalability' },
-                        { key: 'business', label: 'Business Viability' },
-                        { key: 'presentation', label: 'Presentation & Pitch' }
+                        { key: 'innovation', label: 'System Architecture & Clarity', max: 15 },
+                        { key: 'tech_impl', label: 'Coding Progress & Cleverness', max: 40 },
+                        { key: 'impact', label: 'Real Need for Tech & Social Impact', max: 20 },
+                        { key: 'business', label: 'Validation & Verification', max: 15 },
+                        { key: 'presentation', label: 'Feasibility & Cost-Effectiveness', max: 10 }
                       ].map((category) => (
                         <div key={category.key} className="space-y-1">
                           <div className="flex justify-between items-center">
                             <label className="text-sm font-bold text-slate-700">{category.label}</label>
-                            <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{gradeData[category.key]} / 10</span>
+                            <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{gradeData[category.key] || 0} / {category.max}</span>
                           </div>
                           <input 
                             type="range" 
-                            min="1" 
-                            max="10" 
+                            min="0" 
+                            max={category.max} 
                             step="1"
-                            value={gradeData[category.key]}
-                            onChange={e => setGradeData({...gradeData, [category.key]: parseInt(e.target.value)})}
+                            value={gradeData[category.key] || 0}
+                            onChange={e => setGradeData({...gradeData, [category.key]: parseInt(e.target.value) || 0})}
                             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                           />
                           <div className="flex justify-between text-[10px] text-slate-400 font-mono px-1">
-                            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                            <span>0</span>
+                            <span>{Math.round(category.max / 2)}</span>
+                            <span>{category.max}</span>
                           </div>
                         </div>
                       ))}
@@ -2369,7 +2396,7 @@ export default function AdminDashboard() {
 
                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 mt-8">
                       <p className="text-sm text-blue-800 text-center font-bold">
-                        Total Score: <span className="text-3xl">{calculateTotalScore(gradeData)}</span> / 70
+                        Total Score: <span className="text-3xl">{calculateTotalScore(gradeData)}</span> / 100
                       </p>
                     </div>
                   </>

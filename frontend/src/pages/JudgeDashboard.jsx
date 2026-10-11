@@ -24,6 +24,7 @@ export default function JudgeDashboard() {
     presentation: 3,
     selected_status: false
   });
+  const [evalForms, setEvalForms] = useState({});
   const [panelTeams, setPanelTeams] = useState([]);
   const [submitLoading, setSubmitLoading] = useState(false);
   
@@ -100,6 +101,20 @@ export default function JudgeDashboard() {
             };
           });
           setPanelTeams(processedR2);
+
+          // Populate per-team evalForms dictionary
+          const initialForms = {};
+          processedR2.forEach(team => {
+            initialForms[team.id] = {
+              innovation: team.evalData?.innovation !== undefined && team.evalData?.innovation !== null ? team.evalData.innovation : '',
+              tech_impl: team.evalData?.tech_impl !== undefined && team.evalData?.tech_impl !== null ? team.evalData.tech_impl : '',
+              impact: team.evalData?.impact !== undefined && team.evalData?.impact !== null ? team.evalData.impact : '',
+              business: team.evalData?.business !== undefined && team.evalData?.business !== null ? team.evalData.business : '',
+              presentation: team.evalData?.presentation !== undefined && team.evalData?.presentation !== null ? team.evalData.presentation : '',
+              selected_status: team.evalData?.selected_status || false
+            };
+          });
+          setEvalForms(initialForms);
         }
       }
     } catch (err) {
@@ -116,26 +131,136 @@ export default function JudgeDashboard() {
     navigate('/judge-login');
   };
 
-  const toggleExpand = (teamStrId, team = null, round = null) => {
+  const toggleExpand = (teamStrId) => {
     const newExpanded = new Set(expandedTeams);
     if (newExpanded.has(teamStrId)) {
       newExpanded.delete(teamStrId);
     } else {
       newExpanded.add(teamStrId);
-      if (team && round === 2) {
-        setEvalForm({
-          team_id: team.id,
-          round_number: 2,
-          innovation: team.evalData?.innovation !== undefined ? team.evalData.innovation : (round === 2 ? '' : 3),
-          tech_impl: team.evalData?.tech_impl !== undefined ? team.evalData.tech_impl : (round === 2 ? '' : 3),
-          impact: team.evalData?.impact !== undefined ? team.evalData.impact : (round === 2 ? '' : 3),
-          business: team.evalData?.business !== undefined ? team.evalData.business : (round === 2 ? '' : 3),
-          presentation: team.evalData?.presentation !== undefined ? team.evalData.presentation : (round === 2 ? '' : 3),
-          selected_status: team.evalData?.selected_status || false
-        });
-      }
     }
     setExpandedTeams(newExpanded);
+  };
+
+  const updateCriteria = (teamId, key, value, max) => {
+    let finalVal = '';
+    if (value !== '') {
+      let num = parseInt(value, 10);
+      if (!isNaN(num)) {
+        if (num > max) finalVal = max;
+        else if (num < 0) finalVal = 0;
+        else finalVal = num;
+      }
+    }
+    setEvalForms(prev => ({
+      ...prev,
+      [teamId]: {
+        ...(prev[teamId] || {}),
+        [key]: finalVal
+      }
+    }));
+  };
+
+  const updateSelectedStatus = (teamId, status) => {
+    setEvalForms(prev => ({
+      ...prev,
+      [teamId]: {
+        ...(prev[teamId] || {}),
+        selected_status: status
+      }
+    }));
+  };
+
+  const handleR2EvalSubmit = async (e, team) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+    try {
+      const judgeId = localStorage.getItem('judgeId');
+      if (!judgeId) {
+        alert('Judge session expired. Please log in again.');
+        return;
+      }
+
+      const teamForm = evalForms[team.id] || {};
+      const inn = parseInt(teamForm.innovation !== undefined && teamForm.innovation !== '' ? teamForm.innovation : (team.evalData?.innovation || 0), 10) || 0;
+      const tech = parseInt(teamForm.tech_impl !== undefined && teamForm.tech_impl !== '' ? teamForm.tech_impl : (team.evalData?.tech_impl || 0), 10) || 0;
+      const imp = parseInt(teamForm.impact !== undefined && teamForm.impact !== '' ? teamForm.impact : (team.evalData?.impact || 0), 10) || 0;
+      const biz = parseInt(teamForm.business !== undefined && teamForm.business !== '' ? teamForm.business : (team.evalData?.business || 0), 10) || 0;
+      const pres = parseInt(teamForm.presentation !== undefined && teamForm.presentation !== '' ? teamForm.presentation : (team.evalData?.presentation || 0), 10) || 0;
+      const total = inn + tech + imp + biz + pres;
+      const selected = teamForm.selected_status !== undefined ? teamForm.selected_status : Boolean(team.evalData?.selected_status);
+
+      const payload = {
+        team_id: team.id,
+        judge_id: judgeId,
+        round_number: 2,
+        innovation: inn,
+        tech_impl: tech,
+        impact: imp,
+        business: biz,
+        presentation: pres,
+        total_score: total,
+        selected_status: selected
+      };
+
+      // Check if existing evaluation
+      const { data: existing, error: findErr } = await supabase
+        .from('evaluations')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('judge_id', judgeId)
+        .eq('round_number', 2)
+        .maybeSingle();
+
+      if (findErr) {
+        console.error("Find existing eval error:", findErr);
+      }
+
+      let saveErr = null;
+      let savedData = null;
+      if (existing?.id) {
+        const { data, error } = await supabase
+          .from('evaluations')
+          .update(payload)
+          .eq('id', existing.id)
+          .select();
+        saveErr = error;
+        savedData = data?.[0];
+      } else {
+        const { data, error } = await supabase
+          .from('evaluations')
+          .insert([payload])
+          .select();
+        saveErr = error;
+        savedData = data?.[0];
+      }
+
+      if (saveErr) {
+        console.error("Database save error:", saveErr);
+        alert(`Error saving evaluation: ${saveErr.message}\n\nPlease ensure migration 0014 has been run in the Supabase SQL editor to allow Round 2 criteria scores.`);
+        return;
+      }
+
+      const updatedEval = savedData || { ...payload, id: existing?.id || 'saved' };
+      setPanelTeams(prev => prev.map(t => t.id === team.id ? { ...t, evalData: updatedEval } : t));
+      setEvalForms(prev => ({
+        ...prev,
+        [team.id]: {
+          innovation: inn,
+          tech_impl: tech,
+          impact: imp,
+          business: biz,
+          presentation: pres,
+          selected_status: selected
+        }
+      }));
+
+      alert('Evaluation saved successfully!');
+    } catch (err) {
+      console.error("Error submitting evaluation:", err);
+      alert(`Submission error: ${err.message || 'Please check your connection and try again.'}`);
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   const handleTeamSelect = (e) => {
@@ -177,40 +302,54 @@ export default function JudgeDashboard() {
     setSubmitLoading(true);
     const judgeId = localStorage.getItem('judgeId');
     
+    const inn = parseInt(evalForm.innovation, 10) || 0;
+    const tech = parseInt(evalForm.tech_impl, 10) || 0;
+    const imp = parseInt(evalForm.impact, 10) || 0;
+    const biz = parseInt(evalForm.business, 10) || 0;
+    const pres = parseInt(evalForm.presentation, 10) || 0;
+    
     const payload = {
       team_id: evalForm.team_id,
       judge_id: judgeId,
       round_number: evalForm.round_number,
-      innovation: evalForm.innovation,
-      tech_impl: evalForm.tech_impl,
-      impact: evalForm.impact,
-      business: evalForm.business,
-      presentation: evalForm.presentation,
-      total_score: parseInt(evalForm.innovation) + parseInt(evalForm.tech_impl) + parseInt(evalForm.impact) + parseInt(evalForm.business) + parseInt(evalForm.presentation),
-      selected_status: evalForm.selected_status
+      innovation: inn,
+      tech_impl: tech,
+      impact: imp,
+      business: biz,
+      presentation: pres,
+      total_score: inn + tech + imp + biz + pres,
+      selected_status: Boolean(evalForm.selected_status)
     };
 
-    // Check if evaluation already exists for this judge, team, and round
-    const { data: existing } = await supabase
-      .from('evaluations')
-      .select('id')
-      .eq('team_id', evalForm.team_id)
-      .eq('judge_id', judgeId)
-      .eq('round_number', evalForm.round_number)
-      .single();
+    try {
+      const { data: existing } = await supabase
+        .from('evaluations')
+        .select('id')
+        .eq('team_id', evalForm.team_id)
+        .eq('judge_id', judgeId)
+        .eq('round_number', evalForm.round_number)
+        .maybeSingle();
 
-    if (existing) {
-      await supabase.from('evaluations').update(payload).eq('id', existing.id);
-    } else {
-      await supabase.from('evaluations').insert([payload]);
+      let err = null;
+      if (existing) {
+        const { error } = await supabase.from('evaluations').update(payload).eq('id', existing.id);
+        err = error;
+      } else {
+        const { error } = await supabase.from('evaluations').insert([payload]);
+        err = error;
+      }
+
+      if (err) throw err;
+
+      alert('Evaluation saved successfully!');
+      setEvalForm({ ...evalForm, team_id: '' });
+      fetchAssignedTeams();
+    } catch (err) {
+      console.error('Error saving evaluation:', err);
+      alert(`Error saving evaluation: ${err.message || 'Please check connection'}`);
+    } finally {
+      setSubmitLoading(false);
     }
-    
-    setSubmitLoading(false);
-    alert('Evaluation saved successfully!');
-    // Reset form
-    setEvalForm({ ...evalForm, team_id: '' });
-    // Refresh to show evaluated status
-    fetchAssignedTeams();
   };
 
   if (loading) {
@@ -496,7 +635,7 @@ export default function JudgeDashboard() {
                               )}
                             </td>
                             <td className="py-4 px-4 text-right">
-                              <Button size="sm" onClick={() => toggleExpand(`r2-${team.id}`, team, 2)} variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-full shadow-sm text-xs px-4">
+                              <Button size="sm" onClick={() => toggleExpand(`r2-${team.id}`)} variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-full shadow-sm text-xs px-4">
                                 {expandedTeams.has(`r2-${team.id}`) ? 'Hide' : 'Evaluate'}
                               </Button>
                             </td>
@@ -505,8 +644,8 @@ export default function JudgeDashboard() {
                             <tr className="bg-[#f5f5f7]/30">
                               <td colSpan="5" className="px-4 py-6">
                                 <div className="bg-white p-6 rounded-xl border border-[#d2d2d7]/50 shadow-sm">
-                                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-4">Evaluate Team</h4>
-                                  <form onSubmit={(e) => { e.preventDefault(); handleEvalSubmit(e); toggleExpand(`r2-${team.id}`); }} className="space-y-5">
+                                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-4">Evaluate Team: {team.team_name}</h4>
+                                  <form onSubmit={(e) => handleR2EvalSubmit(e, team)} className="space-y-5">
                                     <div className="space-y-3">
                                       {[
                                         { key: 'innovation', label: 'System Architecture & Clarity', max: 15 },
@@ -514,80 +653,77 @@ export default function JudgeDashboard() {
                                         { key: 'impact', label: 'Real Need for Tech & Social Impact', max: 20 },
                                         { key: 'business', label: 'Validation & Verification', max: 15 },
                                         { key: 'presentation', label: 'Feasibility & Cost-Effectiveness', max: 10 }
-                                      ].map(criteria => (
-                                        <div key={criteria.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 border-b border-[#f5f5f7] pb-3 pt-1 last:border-0 last:pb-0">
-                                          <label className="text-sm font-semibold text-[#1d1d1f] flex-1 break-words">
-                                            {criteria.label}
-                                          </label>
-                                          <div className="flex gap-3 items-center shrink-0">
-                                            <span className="text-[#86868b] text-xs font-mono w-20 text-right">(Max {criteria.max})</span>
-                                            <input 
-                                              type="number"
-                                              min="0"
-                                              max={criteria.max}
-                                              value={evalForm.team_id === team.id ? evalForm[criteria.key] : team.evalData?.[criteria.key] || ''}
-                                              onChange={(e) => {
-                                                let val = parseInt(e.target.value);
-                                                if (isNaN(val)) val = '';
-                                                else if (val > criteria.max) val = criteria.max;
-                                                else if (val < 0) val = 0;
-                                                setEvalForm({...evalForm, [criteria.key]: val, team_id: team.id, round_number: 2});
-                                              }}
-                                              onFocus={() => {
-                                                if (evalForm.team_id !== team.id) {
-                                                  setEvalForm({
-                                                    team_id: team.id,
-                                                    round_number: 2,
-                                                    innovation: team.evalData?.innovation || 0,
-                                                    tech_impl: team.evalData?.tech_impl || 0,
-                                                    impact: team.evalData?.impact || 0,
-                                                    business: team.evalData?.business || 0,
-                                                    presentation: team.evalData?.presentation || 0,
-                                                    selected_status: team.evalData?.selected_status || false
-                                                  });
-                                                }
-                                              }}
-                                              className="border border-[#d2d2d7] rounded-lg px-3 py-1.5 text-sm w-24 text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-[#f5f5f7] focus:bg-white transition-all font-semibold"
-                                              placeholder="0"
-                                            />
+                                      ].map(criteria => {
+                                        const currentVal = evalForms[team.id]?.[criteria.key] !== undefined 
+                                          ? evalForms[team.id][criteria.key] 
+                                          : (team.evalData?.[criteria.key] !== undefined && team.evalData?.[criteria.key] !== null ? team.evalData[criteria.key] : '');
+                                        return (
+                                          <div key={criteria.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 border-b border-[#f5f5f7] pb-3 pt-1 last:border-0 last:pb-0">
+                                            <label className="text-sm font-semibold text-[#1d1d1f] flex-1 break-words">
+                                              {criteria.label}
+                                            </label>
+                                            <div className="flex gap-3 items-center shrink-0">
+                                              <span className="text-[#86868b] text-xs font-mono w-20 text-right">(Max {criteria.max})</span>
+                                              <input 
+                                                type="number"
+                                                min="0"
+                                                max={criteria.max}
+                                                value={currentVal}
+                                                onChange={(e) => updateCriteria(team.id, criteria.key, e.target.value, criteria.max)}
+                                                className="border border-[#d2d2d7] rounded-lg px-3 py-1.5 text-sm w-24 text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-[#f5f5f7] focus:bg-white transition-all font-semibold"
+                                                placeholder="0"
+                                              />
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
 
                                     <div className="mt-4 pt-4 border-t border-[#d2d2d7]/50 flex justify-between items-center bg-[#f5f5f7]/50 p-4 rounded-xl border border-[#d2d2d7]/30">
                                       <span className="font-bold text-[#1d1d1f] uppercase tracking-wider text-sm">Total Score</span>
                                       <span className="font-bold text-2xl text-blue-600 font-mono">
-                                        {evalForm.team_id === team.id 
-                                          ? (parseInt(evalForm.innovation) || 0) + (parseInt(evalForm.tech_impl) || 0) + (parseInt(evalForm.impact) || 0) + (parseInt(evalForm.business) || 0) + (parseInt(evalForm.presentation) || 0)
-                                          : (parseInt(team.evalData?.innovation) || 0) + (parseInt(team.evalData?.tech_impl) || 0) + (parseInt(team.evalData?.impact) || 0) + (parseInt(team.evalData?.business) || 0) + (parseInt(team.evalData?.presentation) || 0)
-                                        } <span className="text-sm text-[#86868b]">/ 100</span>
+                                        {(() => {
+                                          const f = evalForms[team.id] || {};
+                                          const inn = parseInt(f.innovation !== undefined && f.innovation !== '' ? f.innovation : (team.evalData?.innovation || 0), 10) || 0;
+                                          const tech = parseInt(f.tech_impl !== undefined && f.tech_impl !== '' ? f.tech_impl : (team.evalData?.tech_impl || 0), 10) || 0;
+                                          const imp = parseInt(f.impact !== undefined && f.impact !== '' ? f.impact : (team.evalData?.impact || 0), 10) || 0;
+                                          const biz = parseInt(f.business !== undefined && f.business !== '' ? f.business : (team.evalData?.business || 0), 10) || 0;
+                                          const pres = parseInt(f.presentation !== undefined && f.presentation !== '' ? f.presentation : (team.evalData?.presentation || 0), 10) || 0;
+                                          return inn + tech + imp + biz + pres;
+                                        })()} <span className="text-sm text-[#86868b]">/ 100</span>
                                       </span>
                                     </div>
                                     
                                     <div className="pt-4 border-t border-[#d2d2d7]/50 mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                      <label className="flex items-center gap-3 cursor-pointer">
-                                        <div className="relative">
-                                          <input 
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={evalForm.team_id === team.id ? evalForm.selected_status : team.evalData?.selected_status || false}
-                                            onChange={(e) => setEvalForm({...evalForm, selected_status: e.target.checked, team_id: team.id, round_number: 2})}
-                                          />
-                                          <div className={`block w-12 h-7 rounded-full transition-colors ${evalForm.team_id === team.id && evalForm.selected_status ? 'bg-blue-600' : 'bg-red-500'}`}></div>
-                                          <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${evalForm.team_id === team.id && evalForm.selected_status ? 'transform translate-x-5' : ''}`}></div>
-                                        </div>
-                                        <div className="flex flex-col">
-                                          <span className={`text-sm font-bold ${evalForm.team_id === team.id && evalForm.selected_status ? 'text-blue-700' : 'text-red-700'}`}>
-                                            {evalForm.team_id === team.id && evalForm.selected_status ? 'Selected' : 'Not Selected'}
-                                          </span>
-                                          <span className="text-xs text-[#86868b]">Select this team for the next phase</span>
-                                        </div>
-                                      </label>
+                                      {(() => {
+                                        const isSelected = evalForms[team.id]?.selected_status !== undefined
+                                          ? evalForms[team.id].selected_status
+                                          : Boolean(team.evalData?.selected_status);
+                                        return (
+                                          <label className="flex items-center gap-3 cursor-pointer">
+                                            <div className="relative">
+                                              <input 
+                                                type="checkbox"
+                                                className="sr-only"
+                                                checked={isSelected}
+                                                onChange={(e) => updateSelectedStatus(team.id, e.target.checked)}
+                                              />
+                                              <div className={`block w-12 h-7 rounded-full transition-colors ${isSelected ? 'bg-blue-600' : 'bg-red-500'}`}></div>
+                                              <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${isSelected ? 'transform translate-x-5' : ''}`}></div>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className={`text-sm font-bold ${isSelected ? 'text-blue-700' : 'text-red-700'}`}>
+                                                {isSelected ? 'Selected' : 'Not Selected'}
+                                              </span>
+                                              <span className="text-xs text-[#86868b]">Select this team for the next phase</span>
+                                            </div>
+                                          </label>
+                                        );
+                                      })()}
                                       
                                       <Button 
                                         type="submit" 
-                                        disabled={submitLoading || evalForm.team_id !== team.id}
+                                        disabled={submitLoading}
                                         className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm px-8"
                                       >
                                         {submitLoading ? 'Saving...' : 'Submit Evaluation'}
