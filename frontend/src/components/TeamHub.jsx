@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
-import { Users, FileText, CheckCircle2, Download, AlertCircle, Link as LinkIcon, UploadCloud, ShieldCheck, QrCode, Trophy, Bell, ArrowRight } from 'lucide-react';
+import { Users, FileText, CheckCircle2, Download, AlertCircle, Link as LinkIcon, UploadCloud, ShieldCheck, QrCode, Trophy, Bell, ArrowRight, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -13,6 +13,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [broadcastNotice, setBroadcastNotice] = useState('');
   const [activeTab, setActiveTab] = useState('ppt');
+  const [showResultModal, setShowResultModal] = useState(true);
 
   React.useEffect(() => {
     async function fetchNotice() {
@@ -81,6 +82,82 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
       <div className="fixed inset-0 pointer-events-none z-0" 
            style={{ backgroundImage: 'linear-gradient(to right, #cbd5e133 1px, transparent 1px), linear-gradient(to bottom, #cbd5e133 1px, transparent 1px)', backgroundSize: '32px 32px' }}>
       </div>
+
+      {/* Post-Login Result Status Popup Modal */}
+      {showResultModal && (currentRound === 3 || teamData.is_eliminated) && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 15 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative text-center"
+          >
+            <button
+              onClick={() => setShowResultModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {currentRound === 3 && !teamData.is_eliminated ? (
+              <div>
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-emerald-100">
+                  <Trophy className="w-8 h-8" />
+                </div>
+                <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2">
+                  Grand Finale Shortlist
+                </span>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                  Congratulations!
+                </h3>
+                <p className="text-sm font-semibold text-emerald-700 mb-3">
+                  Your team has been selected for Round 3 (Grand Finale)!
+                </p>
+                <p className="text-xs text-slate-600 leading-relaxed mb-6">
+                  You are officially qualified for the on-site Grand Finale at Puducherry Technological University. Close this notice and scroll down to access your Admit QR Code and venue guidelines.
+                </p>
+                <Button 
+                  onClick={() => setShowResultModal(false)}
+                  className="w-full bg-slate-900 hover:bg-black text-white rounded-xl py-3 font-semibold text-sm shadow-sm transition-all"
+                >
+                  OK
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-rose-100">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <span className="inline-block px-3 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2">
+                  Results Update
+                </span>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                  {currentRound === 2 ? "Round 2 Results Update" : "Application Status"}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                  {currentRound === 2 ? (
+                    "Thank you for participating in Round 2 of the Zéphyr Hackathon 2026. After thorough evaluation by the jury panel, your team has not been shortlisted for the Grand Finale. Updates on your official Microsoft Participation E-Certificates will be communicated soon."
+                  ) : (
+                    "Thank you for submitting your idea to Zéphyr Hackathon 2026. After evaluation, your application was not shortlisted to advance to Round 2."
+                  )}
+                </p>
+                {teamData.rejection_reason && teamData.rejection_reason.toLowerCase().trim() !== 'bulk rejected' && (
+                  <div className="mb-5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs text-slate-600">
+                    <span className="font-semibold text-slate-700">Remarks: </span>
+                    {teamData.rejection_reason}
+                  </div>
+                )}
+                <Button 
+                  onClick={() => setShowResultModal(false)}
+                  className="w-full bg-slate-900 hover:bg-black text-white rounded-xl py-3 font-semibold text-sm shadow-sm transition-all"
+                >
+                  OK
+                </Button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 relative z-10">
         
@@ -176,14 +253,14 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                   <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
                     <CardTitle>
-                      {currentRound === 2 ? "Action Hub" : "Project Submission"}
+                      {teamData.is_eliminated ? "Results & Status" : currentRound === 2 ? "Action Hub" : "Project Submission"}
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      {currentRound === 2 ? "Manage your Round 2 presentation and payments." : "Submit your idea presentation based on the Zephyr template."}
+                      {teamData.is_eliminated ? "Status and updates regarding your participation." : currentRound === 2 ? "Manage your Round 2 presentation and payments." : "Submit your idea presentation based on the Zephyr template."}
                     </CardDescription>
                   </div>
                 </div>
-                {currentRound === 2 && (
+                {!teamData.is_eliminated && currentRound === 2 && (
                   <div className="flex items-center gap-2 bg-slate-200/50 p-1 rounded-lg shrink-0">
                     <button
                       onClick={() => setActiveTab('ppt')}
@@ -203,16 +280,21 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
             </CardHeader>
             <CardContent className="pt-6">
               
-              {currentRound === 1 && teamData.is_eliminated && teamData.rejection_reason && (
-                <div className="mb-6 p-5 rounded-xl border border-red-300 bg-red-50">
-                  <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" /> Application Rejected
-                  </h4>
-                  <p className="text-sm text-red-800 font-medium whitespace-pre-wrap">
-                    {teamData.rejection_reason?.toLowerCase().trim() === 'bulk rejected' 
-                      ? 'Sorry, but better luck next time.' 
-                      : teamData.rejection_reason}
+              {currentRound === 1 && teamData.is_eliminated && (
+                <div className="mb-6 p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-center">
+                  <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-lg mb-2">Application Status</h4>
+                  <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                    Thank you for submitting your idea to Zéphyr Hackathon 2026. After evaluation, your application was not shortlisted to advance to Round 2. We appreciate your efforts and participation.
                   </p>
+                  {teamData.rejection_reason && teamData.rejection_reason.toLowerCase().trim() !== 'bulk rejected' && (
+                    <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl max-w-md mx-auto text-left text-xs text-slate-600">
+                      <span className="font-semibold text-slate-700">Remarks: </span>
+                      {teamData.rejection_reason}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -225,6 +307,12 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                   <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
                     Thank you for participating in Round 2 of the Zéphyr Hackathon 2026. After thorough evaluation by the jury panel, your team has not been shortlisted for the Grand Finale. Updates on your official Microsoft Participation E-Certificates will be communicated to your registered email addresses soon.
                   </p>
+                  {teamData.rejection_reason && teamData.rejection_reason.toLowerCase().trim() !== 'bulk rejected' && (
+                    <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl max-w-md mx-auto text-left text-xs text-slate-600">
+                      <span className="font-semibold text-slate-700">Remarks: </span>
+                      {teamData.rejection_reason}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -326,7 +414,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                 </>
               )}
 
-              {currentRound === 2 && activeTab === 'payment' && (
+              {currentRound === 2 && activeTab === 'payment' && !teamData.is_eliminated && (
                 <>
                   {(paymentStatus === 'pending' || paymentStatus === 'rejected') && (
                     <div className="space-y-6">
@@ -434,7 +522,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                 </>
               )}
 
-              {currentRound === 3 && (
+              {currentRound === 3 && !teamData.is_eliminated && (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-4">
                     <Trophy className="w-8 h-8" />
