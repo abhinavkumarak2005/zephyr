@@ -216,6 +216,18 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                 </div>
               )}
 
+              {currentRound === 2 && teamData.is_eliminated && (
+                <div className="mb-6 p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-center">
+                  <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-lg mb-2">Round 2 Results Update</h4>
+                  <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                    Thank you for participating in Round 2 of the Zéphyr Hackathon 2026. After thorough evaluation by the jury panel, your team has not been shortlisted for the Grand Finale. Updates on your official Microsoft Participation E-Certificates will be communicated to your registered email addresses soon.
+                  </p>
+                </div>
+              )}
+
               {currentRound === 1 && teamData.conditional_selection_reason && !teamData.is_eliminated && (
                 <div className="mb-6 p-5 rounded-xl border border-blue-300 bg-blue-50">
                   <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
@@ -433,7 +445,7 @@ export default function TeamHub({ teamData, teamMemberData, evaluations, onRefre
                     <br/><br/>
                     <strong className="text-slate-800">Venue:</strong> Puducherry Technological University
                     <br/>
-                    Please be present at the venue on time. They will provide you with all further details.
+                    Please be present at the venue on time. The Technical Team will be providing all the details needed further.
                   </p>
                   
                   <div className="mt-4 p-6 bg-white border-2 border-slate-200 border-dashed rounded-xl flex flex-col items-center">

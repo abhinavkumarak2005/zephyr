@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Search, Box, Users, ShieldCheck, Trophy, CreditCard, Activity, FileText, UploadCloud, ChevronDown, ChevronUp, Copy, Check, XCircle, Send, Link as LinkIcon, LogOut, Mail, Phone, GraduationCap, Download } from 'lucide-react';
+import { CheckCircle2, Search, Box, Users, ShieldCheck, Trophy, CreditCard, Activity, FileText, UploadCloud, ChevronDown, ChevronUp, Copy, Check, XCircle, Send, Link as LinkIcon, LogOut, Mail, Phone, GraduationCap, Download, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { getUtrMismatchEmailTemplate } from '../utils/emailTemplates';
@@ -41,7 +41,9 @@ export default function AdminDashboard() {
   const [expandedRow, setExpandedRow] = useState(null);
   
   // Selected teams for Publish
-  const [selectedToPublish, setSelectedToPublish] = useState([]);
+  const [selectedToPublish, setSelectedToPublish] = useState(new Set());
+  const [lastSelectedPublishTeamId, setLastSelectedPublishTeamId] = useState(null);
+  const [publishFilterStatus, setPublishFilterStatus] = useState('ALL');
   const [evalSubTab, setEvalSubTab] = useState('r1');
   
   // Evaluation Results Filters
@@ -496,12 +498,24 @@ export default function AdminDashboard() {
     setSaveLoading(false);
   };
 
+  const handleMoveToPublishResults = () => {
+    if (selectedR2Teams.size === 0) return;
+    setSelectedToPublish(new Set(selectedR2Teams));
+    setLastSelectedPublishTeamId(null);
+    setRound2SubTab('publish');
+  };
+
   const handlePublishResults = async () => {
-    if (selectedToPublish.length === 0) return;
+    const teamIds = Array.from(selectedToPublish);
+    if (teamIds.length === 0) return;
     
-    // 1. Mark evaluations as published
+    if (!window.confirm(`Are you sure you want to promote ${teamIds.length} team(s) to Round 3 (Grand Finale)?`)) {
+      return;
+    }
+    
+    // 1. Mark evaluations as published if any exist
     const evalIdsToPublish = evaluations
-      .filter(ev => selectedToPublish.includes(ev.team_id) && ev.round_number === 2)
+      .filter(ev => teamIds.includes(ev.team_id) && ev.round_number === 2)
       .map(ev => ev.id);
       
     if (evalIdsToPublish.length > 0) {
@@ -509,18 +523,29 @@ export default function AdminDashboard() {
     }
     
     // 2. Promote selected to Round 3
-    await supabase.from('teams').update({ current_round: 3 }).in('id', selectedToPublish);
+    const { error } = await supabase.from('teams').update({ current_round: 3, is_eliminated: false }).in('id', teamIds);
+    if (error) {
+      alert(`Error promoting teams: ${error.message}`);
+    } else {
+      alert(`Successfully promoted ${teamIds.length} team(s) to Round 3!`);
+    }
     
-    setSelectedToPublish([]);
+    setSelectedToPublish(new Set());
+    setLastSelectedPublishTeamId(null);
     fetchTeams();
   };
 
   const handleDisqualifyFromRound2 = async () => {
-    if (selectedToPublish.length === 0) return;
+    const teamIds = Array.from(selectedToPublish);
+    if (teamIds.length === 0) return;
     
-    // 1. Mark evaluations as published
+    if (!window.confirm(`Are you sure you want to disqualify ${teamIds.length} selected team(s) from Round 2?`)) {
+      return;
+    }
+    
+    // 1. Mark evaluations as published if any exist
     const evalIdsToPublish = evaluations
-      .filter(ev => selectedToPublish.includes(ev.team_id) && ev.round_number === 2)
+      .filter(ev => teamIds.includes(ev.team_id) && ev.round_number === 2)
       .map(ev => ev.id);
       
     if (evalIdsToPublish.length > 0) {
@@ -528,9 +553,15 @@ export default function AdminDashboard() {
     }
     
     // 2. Disqualify selected teams
-    await supabase.from('teams').update({ is_eliminated: true }).in('id', selectedToPublish);
+    const { error } = await supabase.from('teams').update({ is_eliminated: true, rejection_reason: null }).in('id', teamIds);
+    if (error) {
+      alert(`Error disqualifying teams: ${error.message}`);
+    } else {
+      alert(`Successfully disqualified ${teamIds.length} team(s).`);
+    }
     
-    setSelectedToPublish([]);
+    setSelectedToPublish(new Set());
+    setLastSelectedPublishTeamId(null);
     fetchTeams();
   };
 
@@ -600,16 +631,23 @@ export default function AdminDashboard() {
   });
   const r3Teams = filteredTeams.filter(t => t.current_round === 3 && !t.is_eliminated);
 
-  // Evaluated Teams for Publish Tab
-  const evaluatedR2Teams = r2TeamsEvaluations
-    .filter(t => evaluations.some(ev => ev.team_id === t.id && ev.round_number === 2))
-    .sort((a, b) => {
-      const evalA = evaluations.find(ev => ev.team_id === a.id && ev.round_number === 2);
-      const evalB = evaluations.find(ev => ev.team_id === b.id && ev.round_number === 2);
-      const scoreA = evalA?.total_score || 0;
-      const scoreB = evalB?.total_score || 0;
-      return scoreB - scoreA;
-    });
+  // Teams for Publish Tab (lists all active Round 2 teams)
+  const publishTeamsList = r2TeamsAll.filter(t => {
+    if (publishFilterStatus === 'ALL') return true;
+    const evals = evaluations.filter(e => e.team_id === t.id && e.round_number === 2);
+    if (publishFilterStatus === 'GRADED') return evals.length > 0;
+    if (publishFilterStatus === 'NOT_GRADED') return evals.length === 0;
+    if (publishFilterStatus === 'SELECTED') return evals.some(e => e.selected_status === true);
+    if (publishFilterStatus === 'NOT_SELECTED') return evals.some(e => e.selected_status === false);
+    return true;
+  }).sort((a, b) => {
+    const evalsA = evaluations.filter(ev => ev.team_id === a.id && ev.round_number === 2);
+    const evalsB = evaluations.filter(ev => ev.team_id === b.id && ev.round_number === 2);
+    const maxA = evalsA.length > 0 ? Math.max(...evalsA.map(e => e.total_score || 0)) : -1;
+    const maxB = evalsB.length > 0 ? Math.max(...evalsB.map(e => e.total_score || 0)) : -1;
+    return maxB - maxA;
+  });
+  const evaluatedR2Teams = publishTeamsList;
 
   // Team Roster Data
   const getRosterTeams = () => {
@@ -1211,7 +1249,7 @@ export default function AdminDashboard() {
                         Evaluations ({r2TeamsEvaluations.length})
                       </button>
                       <button onClick={() => setRound2SubTab('publish')} className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all ${round2SubTab === 'publish' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>
-                        Publish Results
+                        Publish Results ({r2TeamsAll.length})
                       </button>
                       <button onClick={() => setRound2SubTab('disqualified')} className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all ${round2SubTab === 'disqualified' ? 'bg-white shadow-sm text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}>
                         Disqualified
@@ -1361,7 +1399,7 @@ export default function AdminDashboard() {
                   {round2SubTab === 'eval' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
                       <div className="p-4 border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/30 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 flex-wrap">
                           <select 
                             value={r2EvaluationFilter}
                             onChange={(e) => setR2EvaluationFilter(e.target.value)}
@@ -1375,6 +1413,16 @@ export default function AdminDashboard() {
                           <div className="text-sm font-medium text-slate-700 whitespace-nowrap">
                             {selectedR2Teams.size} teams selected
                           </div>
+                          {selectedR2Teams.size > 0 && (
+                            <Button 
+                              onClick={handleMoveToPublishResults} 
+                              size="sm"
+                              className="rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-sm whitespace-nowrap flex items-center gap-1.5 px-4 text-xs font-semibold"
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                              Move to Publish Results ({selectedR2Teams.size})
+                            </Button>
+                          )}
                         </div>
                         <div className="flex gap-2 w-full sm:w-auto">
                             <select 
@@ -1531,66 +1579,226 @@ export default function AdminDashboard() {
                   )}
 
                   {round2SubTab === 'publish' && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden p-6">
-                      <div className="flex justify-between items-center mb-6">
-                        <div>
-                          <h3 className="font-bold text-lg">Publish Round 2 Results</h3>
-                          <p className="text-sm text-slate-500">Select passing teams below and click Promote. Or click Disqualify to eliminate them.</p>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-sm border border-[#d2d2d7]/50 overflow-hidden">
+                      {/* Top Action & Filter Bar */}
+                      <div className="p-4 border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/30 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <select 
+                            value={publishFilterStatus}
+                            onChange={(e) => setPublishFilterStatus(e.target.value)}
+                            className="text-sm border rounded-full px-4 py-1.5 bg-white border-[#d2d2d7] font-medium"
+                          >
+                            <option value="ALL">All Round 2 Teams ({r2TeamsAll.length})</option>
+                            <option value="GRADED">Graded Only</option>
+                            <option value="SELECTED">Judge Recommended (Selected)</option>
+                            <option value="NOT_SELECTED">Not Recommended (Rejected)</option>
+                            <option value="NOT_GRADED">Not Graded Yet</option>
+                          </select>
+                          
+                          <div className="text-sm font-semibold text-purple-900 bg-purple-100 px-3 py-1 rounded-full whitespace-nowrap">
+                            {selectedToPublish.size} teams selected
+                          </div>
+
+                          <div className="flex gap-1.5 items-center flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const gradedIds = publishTeamsList
+                                  .filter(t => evaluations.some(e => e.team_id === t.id && e.round_number === 2))
+                                  .map(t => t.id);
+                                setSelectedToPublish(new Set(gradedIds));
+                                setLastSelectedPublishTeamId(null);
+                              }}
+                              className="text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-colors"
+                            >
+                              Select Graded
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const recIds = publishTeamsList
+                                  .filter(t => evaluations.some(e => e.team_id === t.id && e.round_number === 2 && e.selected_status === true))
+                                  .map(t => t.id);
+                                setSelectedToPublish(new Set(recIds));
+                                setLastSelectedPublishTeamId(null);
+                              }}
+                              className="text-xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full transition-colors"
+                            >
+                              Select Recommended
+                            </button>
+                            {selectedToPublish.size > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedToPublish(new Set());
+                                  setLastSelectedPublishTeamId(null);
+                                }}
+                                className="text-xs font-medium text-slate-500 hover:text-slate-800 underline px-2"
+                              >
+                                Clear Selection
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex gap-2">
+
+                        <div className="flex gap-2 w-full sm:w-auto justify-end">
                           <Button 
                             onClick={handleDisqualifyFromRound2} 
-                            disabled={selectedToPublish.length === 0}
+                            disabled={selectedToPublish.size === 0}
                             variant="outline"
-                            className="text-red-600 border-red-200 hover:text-red-700 hover:bg-red-50 rounded-full px-6"
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:text-red-700 hover:bg-red-50 rounded-full px-5 text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
                           >
-                            Disqualify Selected ({selectedToPublish.length})
+                            <XCircle className="w-4 h-4 mr-1.5" />
+                            Disqualify Selected ({selectedToPublish.size})
                           </Button>
                           <Button 
                             onClick={handlePublishResults} 
-                            disabled={selectedToPublish.length === 0}
-                            className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6"
+                            disabled={selectedToPublish.size === 0}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 text-xs font-semibold shadow-sm disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
                           >
-                            Promote Selected ({selectedToPublish.length})
+                            <Trophy className="w-4 h-4" />
+                            Bulk Promote to Round 3 ({selectedToPublish.size})
                           </Button>
                         </div>
                       </div>
-                      
-                      <div className="space-y-2">
-                        {evaluatedR2Teams.map(team => {
-                          const allEvals = evaluations.filter(ev => ev.team_id === team.id && ev.round_number === 2);
-                          const isSelected = selectedToPublish.includes(team.id);
-                          const allSelectedStatus = allEvals.every(e => e.selected_status === true);
-                          const allRejectedStatus = allEvals.every(e => e.selected_status === false);
-                          
-                          return (
-                            <div key={team.id} className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-colors ${isSelected ? 'border-purple-500 bg-purple-50' : 'border-slate-200 hover:border-purple-300'}`} onClick={() => {
-                              setSelectedToPublish(prev => isSelected ? prev.filter(id => id !== team.id) : [...prev, team.id]);
-                            }}>
-                              <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-purple-600 border-purple-600 text-white' : 'border-slate-300'}`}>
-                                {isSelected && <Check className="w-3 h-3" />}
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-bold text-sm">{team.team_name} <span className="font-normal text-slate-500 text-xs ml-2">{team.team_id}</span></h4>
-                                <div className="text-xs text-slate-500 mt-1">{allEvals.length} Evaluation{allEvals.length > 1 ? 's' : ''}</div>
-                              </div>
-                              <div className="text-right flex items-center gap-4">
-                                {allSelectedStatus && <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold uppercase">Judges: Selected</span>}
-                                {allRejectedStatus && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold uppercase">Judges: Not Selected</span>}
-                                {!allSelectedStatus && !allRejectedStatus && <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded text-xs font-bold uppercase">Judges: Mixed</span>}
-                                <span className="font-bold text-lg text-blue-600">
-                                  {Math.round(allEvals.reduce((sum, e) => sum + (e.total_score || 0), 0) / allEvals.length)} <span className="text-sm font-normal text-slate-500">avg / 70</span>
-                                </span>
-                              </div>
-                              {allEvals.some(e => e.is_published) && (
-                                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full uppercase">Published</span>
-                              )}
-                            </div>
-                          )
-                        })}
-                        {evaluatedR2Teams.length === 0 && (
-                          <div className="text-center py-12 text-[#86868b]">No evaluated teams to publish yet. Please grade teams first.</div>
-                        )}
+
+                      {/* Full Interactive Table with Shift-Select */}
+                      <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#d2d2d7]/50 bg-[#f5f5f7]/50">
+                              <th className="py-3 px-4 w-12 text-center">
+                                <input 
+                                  type="checkbox" 
+                                  className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                                  checked={publishTeamsList.length > 0 && selectedToPublish.size === publishTeamsList.length}
+                                  onChange={(e) => {
+                                    if (e.target.checked) setSelectedToPublish(new Set(publishTeamsList.map(t => t.id)));
+                                    else setSelectedToPublish(new Set());
+                                  }}
+                                />
+                              </th>
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Team</th>
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Topic</th>
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Panel</th>
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider">Scores & Recommendation</th>
+                              <th className="py-3 px-4 text-xs font-semibold text-[#86868b] uppercase tracking-wider text-right">Publish Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#d2d2d7]/50">
+                            {publishTeamsList.map(team => {
+                              const allEvals = evaluations.filter(ev => ev.team_id === team.id && ev.round_number === 2);
+                              const isChecked = selectedToPublish.has(team.id);
+                              const isPublished = allEvals.some(e => e.is_published);
+
+                              return (
+                                <tr 
+                                  key={team.id} 
+                                  className={`transition-colors ${isChecked ? 'bg-purple-50/60' : 'hover:bg-[#f5f5f7]/50'}`}
+                                >
+                                  <td className="py-4 px-4 text-center">
+                                    <input 
+                                      type="checkbox" 
+                                      className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                                      checked={isChecked}
+                                      onChange={(e) => {
+                                        const newSet = new Set(selectedToPublish);
+                                        if (e.nativeEvent.shiftKey && lastSelectedPublishTeamId) {
+                                          const currentIndex = publishTeamsList.findIndex(t => t.id === team.id);
+                                          const lastIndex = publishTeamsList.findIndex(t => t.id === lastSelectedPublishTeamId);
+                                          if (currentIndex !== -1 && lastIndex !== -1) {
+                                            const start = Math.min(currentIndex, lastIndex);
+                                            const end = Math.max(currentIndex, lastIndex);
+                                            for (let i = start; i <= end; i++) {
+                                              if (e.target.checked) newSet.add(publishTeamsList[i].id);
+                                              else newSet.delete(publishTeamsList[i].id);
+                                            }
+                                          }
+                                        } else {
+                                          if (e.target.checked) newSet.add(team.id);
+                                          else newSet.delete(team.id);
+                                        }
+                                        setSelectedToPublish(newSet);
+                                        setLastSelectedPublishTeamId(team.id);
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    <div className="font-semibold text-sm text-[#1d1d1f]">{team.team_name}</div>
+                                    <div className="text-xs text-[#86868b] font-mono mt-0.5">{team.team_id} &bull; {team.college}</div>
+                                  </td>
+                                  <td className="py-4 px-4 text-sm max-w-[200px] truncate" title={team.problem_statements?.title}>
+                                    PS-{team.problem_statement_id}: {team.problem_statements?.title}
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                      {team.r2_panel || 'Unassigned'}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-4 text-sm font-medium">
+                                    {allEvals.length > 0 ? (
+                                      <div className="space-y-1">
+                                        {allEvals.map(ev => {
+                                          const judgeName = judges.find(j => j.id === ev.judge_id)?.name || 'Jury Panel';
+                                          return (
+                                            <div key={ev.id} className="flex flex-col gap-0.5 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                              <div className="flex items-center justify-between gap-2">
+                                                <span className="text-slate-700 font-semibold truncate">{judgeName}</span>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                  {ev.is_absent ? (
+                                                    <span className="text-red-500 font-bold">Absent</span>
+                                                  ) : (
+                                                    <span className="text-blue-600 font-bold">{ev.total_score} / 100</span>
+                                                  )}
+                                                  {ev.selected_status ? (
+                                                    <span className="text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">(Selected)</span>
+                                                  ) : (
+                                                    <span className="text-rose-500 font-bold bg-rose-50 px-1.5 py-0.5 rounded">(Not Selected)</span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              {!ev.is_absent && (
+                                                <div className="text-[11px] text-slate-500">
+                                                  Arch: <span className="font-semibold text-slate-700">{ev.innovation ?? 0}</span>/15 &bull; 
+                                                  Code: <span className="font-semibold text-slate-700">{ev.tech_impl ?? 0}</span>/40 &bull; 
+                                                  Impact: <span className="font-semibold text-slate-700">{ev.impact ?? 0}</span>/20 &bull; 
+                                                  Val: <span className="font-semibold text-slate-700">{ev.business ?? 0}</span>/15 &bull; 
+                                                  Feas: <span className="font-semibold text-slate-700">{ev.presentation ?? 0}</span>/10
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-400 text-xs italic">Not Graded Yet</span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 px-4 text-right">
+                                    {isPublished ? (
+                                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-block">
+                                        Published
+                                      </span>
+                                    ) : (
+                                      <span className="bg-slate-100 text-slate-500 text-xs font-medium px-2.5 py-1 rounded-full inline-block">
+                                        Draft / Pending
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {publishTeamsList.length === 0 && (
+                              <tr>
+                                <td colSpan="6" className="text-center py-12 text-[#86868b]">
+                                  No teams match the current filter in Round 2.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </motion.div>
                   )}
@@ -1614,7 +1822,7 @@ export default function AdminDashboard() {
                                 {evalData && evalData.is_absent ? (
                                   <span className="text-red-600 font-bold text-sm">ABSENT</span>
                                 ) : evalData ? (
-                                  <span className="font-bold text-lg text-red-800">{evalData.total_score} <span className="text-sm font-normal text-red-700/60">/ 70</span></span>
+                                  <span className="font-bold text-lg text-red-800">{evalData.total_score} <span className="text-sm font-normal text-red-700/60">/ 100</span></span>
                                 ) : (
                                   <span className="text-red-500 text-sm">Not Graded</span>
                                 )}
